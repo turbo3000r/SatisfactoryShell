@@ -1,0 +1,9 @@
+.venv/
+config.json
+data/
+dist/
+build/
+*.spec
+__pycache__/
+.pytest_cache/
+installer/redist/*.zip
