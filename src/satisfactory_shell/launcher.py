@@ -1,6 +1,13 @@
 """PyInstaller entry script (absolute import so the package machinery works when frozen)."""
 
+import os
 import sys
+
+# When frozen with --noconsole/--windowed on Windows, stdout/stderr are None
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
 
 from satisfactory_shell.__main__ import main
 
