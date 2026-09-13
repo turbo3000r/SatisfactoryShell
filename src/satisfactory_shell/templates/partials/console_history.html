@@ -1,0 +1,9 @@
+{% for e in history %}
+  <div style="margin-bottom:.6rem">
+    <div class="small"><span class="muted">{{ e.ts }}</span> <b>&gt; {{ e.command }}</b></div>
+    {% if e.error %}<pre class="log" style="max-height:200px;border-color:var(--error)">{{ e.error }}</pre>
+    {% else %}<pre class="log" style="max-height:200px">{{ e.result or '(no output)' }}</pre>{% endif %}
+  </div>
+{% else %}
+  <p class="muted small">No commands run yet.</p>
+{% endfor %}

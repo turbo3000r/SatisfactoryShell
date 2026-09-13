@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Satisfactory Shell{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/htmx.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <span class="brand">Satisfactory Shell</span>
+  <nav>
+    {% for href, label, needs_auth in nav %}
+      <a href="{{ href }}"
+         class="{% if request.url.path == href %}active{% endif %}{% if needs_auth and not authed %} locked{% endif %}"
+         {% if needs_auth and not authed %}title="Login required"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  {% if authed %}
+    <form method="post" action="/logout" class="inline"><button type="submit">Logout</button></form>
+  {% else %}
+    <a class="btn" href="/login">Login</a>
+  {% endif %}
+</header>
+<main>
+  {% for level, message in flashes %}
+    <div class="flash {{ level }}">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<footer>satisfactory-shell {{ app_version }} · © 2026 turbo3000r</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

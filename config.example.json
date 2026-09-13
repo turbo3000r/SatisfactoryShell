@@ -1,0 +1,38 @@
+{
+  "paths": {
+    "server_root": "",
+    "steamcmd": "",
+    "appmanifest": ""
+  },
+  "game": {
+    "host": "127.0.0.1",
+    "port": 49500,
+    "reliable_port": 49501,
+    "extra_args": [
+      "-log",
+      "-unattended",
+      "-ini:Engine:[SystemSettings]:FG.DedicatedServer.AllowInsecureLocalAccess=1"
+    ],
+    "client_password": ""
+  },
+  "webui": {
+    "host": "127.0.0.1",
+    "port": 8080,
+    "secret_key": ""
+  },
+  "process": {
+    "auto_start": true,
+    "auto_restart": true,
+    "restart_delay_seconds": 10,
+    "shutdown_timeout_seconds": 30
+  },
+  "steam": {
+    "app_id": 1690800,
+    "beta": "",
+    "validate": true
+  },
+  "metrics": {
+    "interval_seconds": 5,
+    "history_minutes": 60
+  }
+}

@@ -1,0 +1,65 @@
+{% set state_class = {'Playing': 'ok', 'Idle': 'info', 'Loading': 'warn', 'Starting': 'warn', 'Offline': 'error'}.get(state_name, '') %}
+<div class="grid">
+  <section class="panel">
+    <h2>Process</h2>
+    <p class="status-big">
+      <span class="badge {{ state_class }}">{{ state_name }}</span>
+      {% if proc.busy %}<span class="badge warn">{{ proc.busy }}</span>{% endif %}
+    </p>
+    <dl class="kv">
+      <dt>PID</dt><dd>{% if proc.running %}{{ proc.pid }}{% if not proc.owned %} <span class="muted">(external, adopted)</span>{% endif %}{% else %}-{% endif %}</dd>
+      <dt>Uptime</dt><dd>{{ proc.uptime_seconds | duration if proc.running else '-' }}</dd>
+      <dt>Auto-restart</dt><dd><span class="badge {{ 'ok' if proc.auto_restart else 'warn' }}">{{ 'on' if proc.auto_restart else 'off' }}</span></dd>
+      <dt>Unexpected exits</dt><dd>{{ proc.unexpected_exits }}{% if proc.last_unexpected_exit %} <span class="muted">(last {{ proc.last_unexpected_exit.strftime('%Y-%m-%d %H:%M:%S') }})</span>{% endif %}</dd>
+      <dt>Last exit code</dt><dd>{{ proc.last_exit_code if proc.last_exit_code is not none else '-' }}</dd>
+    </dl>
+    <div class="actions" style="margin-top:.8rem">
+      <form class="inline" method="post" action="/start"><input type="hidden" name="next" value="/dashboard"><button type="submit" class="primary" {% if proc.running or proc.busy %}disabled{% endif %}>Start</button></form>
+      <form class="inline" method="post" action="/process/stop" onsubmit="return confirm('Stop the server? Players will be disconnected.')"><button type="submit" class="danger" {% if not proc.running or proc.busy %}disabled{% endif %}>Stop</button></form>
+      <form class="inline" method="post" action="/process/restart" onsubmit="return confirm('Restart the server?')"><button type="submit" {% if not proc.running or proc.busy %}disabled{% endif %}>Restart</button></form>
+      <form class="inline" method="post" action="/process/toggle-auto-restart"><button type="submit">{{ 'Disable' if proc.auto_restart else 'Enable' }} auto-restart</button></form>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Game</h2>
+    {% if game_state %}
+    <dl class="kv">
+      <dt>Session</dt><dd>{{ game_state.get('activeSessionName') or '-' }}</dd>
+      <dt>Running</dt><dd>{% if game_state.get('isGameRunning') %}<span class="badge ok">save loaded</span>{% else %}<span class="badge warn">waiting for session</span>{% endif %}</dd>
+      <dt>Paused</dt><dd>{% if game_state.get('isGamePaused') %}<span class="badge warn">paused</span>{% else %}<span class="badge ok">running</span>{% endif %}</dd>
+      <dt>Players</dt><dd>{{ game_state.get('numConnectedPlayers', 0) }} / {{ game_state.get('playerLimit', '?') }}</dd>
+      {% set tick = game_state.get('averageTickRate') or 0 %}
+      <dt>Tick rate</dt><dd><span class="badge {{ 'ok' if tick >= 25 else ('warn' if tick >= 10 else 'error') }}">{{ '%.1f' | format(tick) }} tps</span></dd>
+      <dt>Time played</dt><dd>{{ game_state.get('totalGameDuration') | duration }}</dd>
+      <dt>Tech tier</dt><dd>{{ game_state.get('techTier', '-') }}</dd>
+      <dt>Game phase</dt><dd class="small">{{ (game_state.get('gamePhase') or '-') | replace('/Game/FactoryGame/GamePhases/', '') }}</dd>
+      <dt>Active milestone</dt><dd class="small">{{ (game_state.get('activeSchematic') or '-').rsplit('/', 1)[-1] }}</dd>
+      <dt>Auto-load session</dt><dd>{{ game_state.get('autoLoadSessionName') or '-' }}</dd>
+    </dl>
+    {% elif api_error %}
+      <p class="muted">API: {{ api_error }}{% if lw and lw.state == 2 %} (loading a save){% endif %}</p>
+    {% else %}
+      <p class="muted">Server API not reachable.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Server options (read-only)</h2>
+    {% if options %}
+    <dl class="kv small">
+      {% for k, v in options.items() | sort %}
+        <dt>{{ k | replace('FG.', '') }}</dt>
+        <dd>{{ v }}{% if pending and k in pending %} <span class="badge warn" title="pending">→ {{ pending[k] }}</span>{% endif %}</dd>
+      {% endfor %}
+    </dl>
+    {% else %}<p class="muted">-</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Recent events</h2>
+    <ul class="events">
+      {% for ts, msg in events %}<li>{{ ts.strftime('%H:%M:%S') }} <b>{{ msg }}</b></li>{% else %}<li>none yet</li>{% endfor %}
+    </ul>
+  </section>
+</div>

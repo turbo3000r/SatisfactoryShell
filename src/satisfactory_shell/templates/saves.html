@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Saves - Satisfactory Shell{% endblock %}
+{% block content %}
+<h1>Saves</h1>
+
+{% if api_error %}<div class="flash error">API: {{ api_error }}. The server may be offline or loading.</div>{% endif %}
+
+<div class="grid">
+  <section class="panel">
+    <h2>Save current game</h2>
+    <form method="post" action="/saves/save" class="actions">
+      <input type="text" name="save_name" placeholder="save name" required {% if not is_playing %}disabled{% endif %}>
+      <button type="submit" class="primary" {% if not is_playing %}disabled{% endif %}>Save now</button>
+      {% if not is_playing %}<span class="muted small">No session loaded.</span>{% endif %}
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Upload save</h2>
+    <form method="post" action="/saves/upload" enctype="multipart/form-data" class="actions">
+      <input type="file" name="file" accept=".sav" required>
+      <input type="text" name="save_name" placeholder="save name (default: file name)">
+      <label class="check"><input type="checkbox" name="load" value="true"> load after upload</label>
+      <label class="check"><input type="checkbox" name="ags" value="true"> advanced game settings</label>
+      <button type="submit">Upload</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Create new game</h2>
+    <form method="post" action="/saves/new" class="actions" onsubmit="return confirm('Create and load a new session? The current session will be unloaded.')">
+      <input type="text" name="session_name" placeholder="session name" required>
+      <input type="text" name="starting_location" placeholder="starting location (optional)">
+      <input type="text" name="map_name" placeholder="map package path (optional)">
+      <button type="submit">Create &amp; load</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Auto-load on startup</h2>
+    <form method="post" action="/saves/autoload" class="actions">
+      <select name="session_name" required>
+        <option value="" disabled selected>choose session</option>
+        {% for s in sessions %}<option value="{{ s.sessionName }}">{{ s.sessionName }}</option>{% endfor %}
+      </select>
+      <button type="submit">Set auto-load</button>
+      {% if game_state %}<span class="muted small">current: {{ game_state.get('autoLoadSessionName') or '-' }}</span>{% endif %}
+    </form>
+  </section>
+</div>
+
+{% for s in sessions %}
+<section class="panel" style="margin-top:1rem">
+  <div class="actions" style="justify-content:space-between">
+    <h2 style="margin:0">Session: {{ s.sessionName }} {% if loop.index0 == current_index %}<span class="badge ok">loaded</span>{% endif %}</h2>
+    <form class="inline" method="post" action="/saves/delete-session" onsubmit="return confirm('Delete ALL {{ s.headers | length }} save files of session {{ s.sessionName }}?')">
+      <input type="hidden" name="session_name" value="{{ s.sessionName }}">
+      <button type="submit" class="danger">Delete session</button>
+    </form>
+  </div>
+  <table>
+    <thead><tr><th>Save</th><th>Saved</th><th>Play time</th><th>Map</th><th>Build</th><th>Flags</th><th></th></tr></thead>
+    <tbody>
+    {% for h in s.headers %}
+      <tr>
+        <td>{{ h.saveName }}</td>
+        <td class="small">{{ h.saveDateTime }}</td>
+        <td>{{ h.playDuration | duration }}</td>
+        <td class="small">{{ h.mapName }}</td>
+        <td class="small">{{ h.buildVersion }}</td>
+        <td>
+          {% if h.modded %}<span class="badge warn">modded</span>{% endif %}
+          {% if h.edited %}<span class="badge warn">edited</span>{% endif %}
+          {% if h.creative %}<span class="badge info">AGS</span>{% endif %}
+        </td>
+        <td class="actions" style="justify-content:flex-end">
+          <form class="inline" method="post" action="/saves/load" onsubmit="return confirm('Load {{ h.saveName }}? The API will be unavailable while loading.')">
+            <input type="hidden" name="save_name" value="{{ h.saveName }}">
+            <label class="check small"><input type="checkbox" name="ags" value="true" {% if h.creative %}checked{% endif %}>AGS</label>
+            <button type="submit">Load</button>
+          </form>
+          <a class="btn" href="/saves/download?save_name={{ h.saveName | urlencode }}">Download</a>
+          <form class="inline" method="post" action="/saves/delete-file" onsubmit="return confirm('Delete save file {{ h.saveName }}?')">
+            <input type="hidden" name="save_name" value="{{ h.saveName }}">
+            <button type="submit" class="danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+  {% if not api_error %}<p class="muted" style="margin-top:1rem">No save sessions found on the server.</p>{% endif %}
+{% endfor %}
+{% endblock %}
