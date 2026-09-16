@@ -1,0 +1,24 @@
+---
+description: Frontend UI and Design System Standards
+globs: **/*.{tsx,jsx,ts,js,css}
+alwaysApply: true
+---
+
+# UI & Design Guidelines
+
+## 1. Composition over Reinvention
+- ALWAYS use official shadcn/ui components before writing custom markup.
+- Dashboard views must be composed of `Sidebar`, `Card`, `Table`, `Badge`, and `Tabs`.
+- For notifications/alerts, use `sonner` or `Alert`—never write custom floating banners.
+- Use `lucide-react` for all icons. Icons inside buttons must use semantic sizes (`size-4`).
+
+## 2. Strict Layout & Spacing Rules
+- Never use arbitrary pixel values like `p-[17px]` or `gap-[13px]`. Follow standard 4-point spacing (`gap-2`, `gap-4`, `gap-6`, `p-4`, `p-6`).
+- No `space-x-*` or `space-y-*`. Use flexbox or grid with explicit `gap-*`.
+- For equal width/height, use `size-*` (e.g., `size-8` instead of `w-8 h-8`).
+- Maintain visual hierarchy: 1 primary action per view, distinct section headers, and muted text for labels (`text-muted-foreground`).
+
+## 3. Dark Theme / Color Palette
+- Strict semantic color tokens only: `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`.
+- NEVER hardcode arbitrary colors (e.g., `bg-[#1a1a1a]` or raw `bg-zinc-800` inside components). Rely entirely on CSS variable tokens defined in `globals.css`.
+- Keep accent colors to roughly 10% of the screen (status badges, active buttons, metric graphs).

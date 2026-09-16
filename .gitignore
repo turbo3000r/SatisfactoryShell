@@ -1,3 +1,4 @@
+# --- Python backend ------------------------------------------------------
 .venv/
 config.json
 data/
@@ -7,3 +8,28 @@ build/
 __pycache__/
 .pytest_cache/
 installer/redist/*.zip
+
+# --- Node / frontend -------------------------------------------------------
+# Applies to the root (MCP tooling deps) and any nested project (frontend/).
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+
+# Vite / frontend build output (built assets are generated, not committed;
+# the backend copy step will place them under src/satisfactory_shell/static)
+frontend/dist/
+
+# --- Editors / OS ------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# .cursor/ holds local MCP config and rules; keep rules, ignore local state.
+.cursor/*
+!.cursor/rules/
+!.cursor/mcp.json

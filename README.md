@@ -2,6 +2,21 @@
 
 Process manager, metrics, SteamCMD updater and WebUI for the Satisfactory Dedicated Server. Replaces `launch.bat`.
 
+## Project structure
+
+```
+SatisfactoryShell/
+  src/satisfactory_shell/   # FastAPI backend: process manager, metrics, SteamCMD, WebUI
+    templates/, static/     # current server-rendered HTML/HTMX WebUI (being replaced)
+  frontend/                 # Vite + React + TypeScript + shadcn/ui WebUI (see frontend/README.md)
+  installer/                # Inno Setup Windows installer
+  assets/                   # icons and installer images
+```
+
+The WebUI is being migrated from server-rendered Jinja2/HTMX templates to the
+`frontend/` SPA. Until that migration lands, both exist side by side; see
+[`frontend/README.md`](frontend/README.md) for the frontend dev workflow.
+
 ## Run from source
 
 ```powershell
