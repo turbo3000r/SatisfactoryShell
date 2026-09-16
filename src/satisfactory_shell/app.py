@@ -12,13 +12,13 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
 
-from fastapi import FastAPI, Form, Request, UploadFile
+from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import __version__, paths
+from . import __version__, paths, serialize
 from .bootstrap import Bootstrapper, read_status as read_bootstrap_status
 from .config import Config
 from .logtail import read_tail
@@ -102,6 +102,18 @@ def create_app(cfg: Config) -> FastAPI:
             await st.api.aclose()
 
     app = FastAPI(title="Satisfactory Shell", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None)
+
+    @app.exception_handler(ApiError)
+    async def game_api_error(request: Request, exc: ApiError) -> JSONResponse:
+        """Game-API failures in ``/api`` routes become JSON instead of a 500."""
+        if isinstance(exc, Unauthorized):
+            status = 401
+        elif isinstance(exc, ApiUnavailable):
+            status = 503
+        else:
+            status = 400
+        return JSONResponse({"error": exc.code, "message": exc.message or str(exc)}, status_code=status)
+
     app.add_middleware(SessionMiddleware, secret_key=cfg.secret_key, same_site="lax", https_only=False, max_age=12 * 3600)
     app.mount("/static", StaticFiles(directory=str(paths.static_dir())), name="static")
 
@@ -284,10 +296,10 @@ def create_app(cfg: Config) -> FastAPI:
 
     @app.get("/api/metrics")
     async def api_metrics(request: Request):
-        tok = require_auth(request)
-        if not isinstance(tok, str):
+        if not token_of(request):
             return JSONResponse({"error": "unauthorized"}, status_code=401)
-        return JSONResponse({"samples": st.metrics.snapshot(), "proc": st.pm.info().__dict__ | {"last_unexpected_exit": str(st.pm.info().last_unexpected_exit or "")}}, headers={"Cache-Control": "no-store"})
+        payload = {"samples": st.metrics.snapshot(), "process": serialize.process_info(st.pm.info())}
+        return JSONResponse(payload, headers={"Cache-Control": "no-store"})
 
     @app.post("/start")
     async def start_server(request: Request, next: str = Form("/")):
@@ -605,5 +617,267 @@ def create_app(cfg: Config) -> FastAPI:
         asyncio.create_task(st.steam.update(before, after))
         flash("ok", "Update started. Follow the log below.")
         return RedirectResponse("/updates", status_code=303)
+
+    # ----------------------------------------------------- JSON API (SPA)
+    # Same features as the pages above, consumed by the React frontend in
+    # ``frontend/``. Session cookie auth is shared with the HTML routes.
+    async def read_body(request: Request) -> dict:
+        try:
+            data = await request.json()
+        except Exception:  # noqa: BLE001
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def api_token(request: Request) -> str:
+        tok = token_of(request)
+        if not tok:
+            raise HTTPException(status_code=401, detail="unauthorized")
+        return tok
+
+    def required(data: dict, key: str) -> str:
+        value = str(data.get(key) or "").strip()
+        if not value:
+            raise HTTPException(status_code=422, detail=f"{key} is required")
+        return value
+
+    @app.get("/api/session")
+    async def api_session(request: Request):
+        return {
+            "authed": bool(token_of(request)),
+            "login_at": request.session.get("login_at"),
+            "app_version": __version__,
+        }
+
+    @app.post("/api/login")
+    async def api_login(request: Request):
+        data = await read_body(request)
+        password = str(data.get("password") or "")
+        token = await st.api.password_login(password) if password else await st.api.passwordless_login()
+        request.session["token"] = token
+        request.session["login_at"] = datetime.now().isoformat(timespec="seconds")
+        return {"authed": True}
+
+    @app.post("/api/logout")
+    async def api_logout(request: Request):
+        request.session.clear()
+        return {"authed": False}
+
+    @app.get("/api/status")
+    async def api_status(request: Request):
+        snap = await public_snapshot()
+        return {
+            "authed": bool(token_of(request)),
+            "state": {"num": snap["state_num"], "name": snap["state_name"]},
+            "health": pick(snap["health"], "health", default=None),
+            "api_error": snap["api_error"],
+            "lightweight": serialize.lightweight(snap["lw"]),
+            "process": serialize.process_info(snap["proc"]),
+            "game_state": serialize.game_state(snap["game_state"]),
+            "bootstrap": snap["bootstrap"],
+            "version": snap["version"],
+            "manifest": snap["manifest"],
+            "runtime": snap["runtime"],
+        }
+
+    @app.get("/api/dashboard")
+    async def api_dashboard(request: Request):
+        ctx = await dashboard_ctx(api_token(request))
+        return {
+            "state_name": ctx["state_name"],
+            "api_error": ctx["api_error"],
+            "game_state": serialize.game_state(ctx["game_state"]),
+            "options": ctx["options"],
+            "pending": ctx["pending"],
+            "process": serialize.process_info(ctx["proc"]),
+            "events": serialize.events(ctx["events"]),
+        }
+
+    @app.post("/api/start")
+    async def api_start(request: Request):
+        """Public: the game API cannot be reached while the server is down."""
+        await st.pm.start()
+        return {"ok": True, "message": "Server start requested."}
+
+    @app.post("/api/process/{action}")
+    async def api_process_action(request: Request, action: str):
+        tok = api_token(request)
+        if action == "start":
+            await st.pm.start()
+            message = "Server start requested."
+        elif action == "stop":
+            await st.pm.stop(st.api, tok)
+            message = "Server stopped."
+        elif action == "restart":
+            await st.pm.restart(st.api, tok)
+            message = "Server restarted."
+        elif action == "toggle-auto-restart":
+            st.pm.set_auto_restart(not cfg.auto_restart)
+            message = f"Auto-restart {'enabled' if cfg.auto_restart else 'disabled'}."
+        else:
+            raise HTTPException(status_code=404, detail=f"unknown action {action}")
+        return {"ok": True, "message": message}
+
+    @app.get("/api/saves")
+    async def api_saves(request: Request):
+        ctx = await saves_ctx(api_token(request))
+        return {
+            "sessions": ctx["sessions"],
+            "current_index": ctx["current_index"],
+            "api_error": ctx["api_error"],
+            "is_playing": ctx["is_playing"],
+            "game_state": serialize.game_state(ctx["game_state"]),
+        }
+
+    @app.post("/api/saves/save")
+    async def api_saves_save(request: Request):
+        tok = api_token(request)
+        name = required(await read_body(request), "save_name")
+        await st.api.save_game(tok, name)
+        return {"ok": True, "message": f"Saved as '{name}'."}
+
+    @app.post("/api/saves/load")
+    async def api_saves_load(request: Request):
+        tok = api_token(request)
+        data = await read_body(request)
+        name = required(data, "save_name")
+        await st.api.load_game(tok, name, bool(data.get("ags")))
+        asyncio.create_task(after_load(tok))
+        return {"ok": True, "message": f"Loading '{name}'... the game API is unavailable while loading."}
+
+    @app.post("/api/saves/new")
+    async def api_saves_new(request: Request):
+        tok = api_token(request)
+        data = await read_body(request)
+        session = required(data, "session_name")
+        await st.api.create_new_game(
+            tok,
+            session,
+            str(data.get("map_name") or "").strip(),
+            str(data.get("starting_location") or "").strip(),
+        )
+        asyncio.create_task(after_load(tok))
+        return {"ok": True, "message": f"Creating session '{session}'..."}
+
+    @app.post("/api/saves/autoload")
+    async def api_saves_autoload(request: Request):
+        tok = api_token(request)
+        session = required(await read_body(request), "session_name")
+        await st.api.set_auto_load(tok, session)
+        return {"ok": True, "message": f"Auto-load session set to '{session}'."}
+
+    @app.post("/api/saves/delete-file")
+    async def api_saves_delete_file(request: Request):
+        tok = api_token(request)
+        name = required(await read_body(request), "save_name")
+        await st.api.delete_save_file(tok, name)
+        return {"ok": True, "message": f"Deleted save '{name}'."}
+
+    @app.post("/api/saves/delete-session")
+    async def api_saves_delete_session(request: Request):
+        tok = api_token(request)
+        session = required(await read_body(request), "session_name")
+        await st.api.delete_save_session(tok, session)
+        return {"ok": True, "message": f"Deleted session '{session}'."}
+
+    @app.post("/api/saves/upload")
+    async def api_saves_upload(
+        request: Request,
+        file: UploadFile,
+        save_name: str = Form(""),
+        load: bool = Form(False),
+        ags: bool = Form(False),
+    ):
+        tok = api_token(request)
+        name = save_name.strip() or (file.filename or "upload").rsplit(".", 1)[0]
+        await st.api.upload_save(tok, name, await file.read(), load, ags)
+        if load:
+            asyncio.create_task(after_load(tok))
+        return {"ok": True, "message": f"Uploaded '{name}'" + (" and loading." if load else ".")}
+
+    @app.get("/api/saves/download")
+    async def api_saves_download(request: Request, save_name: str):
+        content = await st.api.download_save(api_token(request), save_name)
+        safe = "".join(c for c in save_name if c.isalnum() or c in "-_. ") or "save"
+        return Response(
+            content,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{safe}.sav"'},
+        )
+
+    @app.get("/api/console")
+    async def api_console(request: Request):
+        api_token(request)
+        text, offset, _ = read_tail(cfg.log_file, None)
+        return {
+            "history": list(reversed(st.console_history)),
+            "log": {"text": text, "offset": offset},
+            "log_file": str(cfg.log_file or ""),
+        }
+
+    @app.post("/api/console/run")
+    async def api_console_run(request: Request):
+        tok = api_token(request)
+        command = required(await read_body(request), "command")
+        entry = {"ts": datetime.now().strftime("%H:%M:%S"), "command": command, "result": "", "error": ""}
+        try:
+            entry["result"] = await st.api.run_command(tok, command)
+        except Unauthorized:
+            raise
+        except ApiError as exc:
+            entry["error"] = str(exc)
+        st.console_history.append(entry)
+        return {"history": list(reversed(st.console_history))}
+
+    @app.get("/api/console/tail")
+    async def api_console_tail(request: Request, offset: int = 0):
+        api_token(request)
+        text, new_offset, rotated = read_tail(cfg.log_file, offset)
+        return {"text": text, "offset": new_offset, "rotated": rotated}
+
+    @app.get("/api/updates")
+    async def api_updates(request: Request):
+        api_token(request)
+        ctx = updates_ctx()
+        return {
+            "installed": ctx["installed"],
+            "status": serialize.update_status(ctx["status"]),
+            "steamcmd_available": ctx["steamcmd_available"],
+            "steamcmd_path": ctx["steamcmd_path"],
+            "server_root": ctx["server_root"],
+            "local_buildid": ctx["local_buildid"],
+            "update_available": ctx["update_available"],
+            "process": serialize.process_info(ctx["proc"]),
+            "app_id": ctx["app_id"],
+            "beta": ctx["beta"],
+        }
+
+    @app.post("/api/updates/check")
+    async def api_updates_check(request: Request):
+        api_token(request)
+        if st.steam.status.running:
+            raise HTTPException(status_code=409, detail="An update is already running.")
+        await st.steam.check()
+        if st.steam.status.check_error:
+            raise HTTPException(status_code=400, detail=f"Check failed: {st.steam.status.check_error}")
+        return {"ok": True, "message": f"Latest {cfg.steam_beta or 'public'} buildid: {st.steam.status.available_buildid}"}
+
+    @app.post("/api/updates/run")
+    async def api_updates_run(request: Request):
+        tok = api_token(request)
+        if st.steam.status.running:
+            raise HTTPException(status_code=409, detail="An update is already running.")
+        if not st.steam.available:
+            raise HTTPException(status_code=400, detail="steamcmd not found. Set paths.steamcmd in config.json.")
+        was_running = st.pm.info().running
+
+        async def before():
+            await st.pm.stop(st.api, tok)
+
+        async def after():
+            if was_running:
+                await st.pm.start()
+
+        asyncio.create_task(st.steam.update(before, after))
+        return {"ok": True, "message": "Update started. Follow the log below."}
 
     return app

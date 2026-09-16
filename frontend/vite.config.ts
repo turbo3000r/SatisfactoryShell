@@ -12,9 +12,9 @@ export default defineConfig({
     },
   },
   server: {
-    // Proxy API calls to the FastAPI backend during development.
+    // Proxy API calls to the FastAPI backend (webui.port defaults to 8080).
     proxy: {
-      '/api': 'http://127.0.0.1:8000',
+      '/api': 'http://127.0.0.1:8080',
     },
   },
 })

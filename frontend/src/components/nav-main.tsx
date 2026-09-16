@@ -1,5 +1,7 @@
+import { LockIcon } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 
+import { useAuth } from "@/components/auth-provider"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -19,25 +21,30 @@ export function NavMain({
   }[]
 }) {
   const location = useLocation()
+  const { authed } = useAuth()
 
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                tooltip={item.title}
-                isActive={location.pathname === item.url}
-              >
-                <Link to={item.url}>
-                  {item.icon}
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {items.map((item) => {
+            const locked = Boolean(item.requiresAuth) && !authed
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={locked ? `${item.title} (login required)` : item.title}
+                  isActive={location.pathname === item.url}
+                >
+                  <Link to={item.url}>
+                    {item.icon}
+                    <span>{item.title}</span>
+                    {locked ? <LockIcon className="ml-auto size-3 text-muted-foreground" /> : null}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
