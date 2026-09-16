@@ -6,26 +6,26 @@ Process manager, metrics, SteamCMD updater and WebUI for the Satisfactory Dedica
 
 ```
 SatisfactoryShell/
-  src/satisfactory_shell/   # FastAPI backend: process manager, metrics, SteamCMD, WebUI
-    templates/, static/     # current server-rendered HTML/HTMX WebUI (being replaced)
+  src/satisfactory_shell/   # FastAPI backend: process manager, metrics, SteamCMD, /api + SPA host
   frontend/                 # Vite + React + TypeScript + shadcn/ui WebUI (see frontend/README.md)
   installer/                # Inno Setup Windows installer
   assets/                   # icons and installer images
 ```
 
-The WebUI is being migrated from server-rendered Jinja2/HTMX templates to the
-`frontend/` SPA. Until that migration lands, both exist side by side; see
-[`frontend/README.md`](frontend/README.md) for the frontend dev workflow.
+The WebUI is the React SPA in `frontend/`. FastAPI serves the built files and the JSON API under `/api`. See [`frontend/README.md`](frontend/README.md) for the frontend dev workflow.
 
 ## Run from source
 
 ```powershell
 cd SatisfactoryShell
 poetry install --with dev
+cd frontend; npm install; npm run build; cd ..
 poetry run satisfactory-shell            # or: poetry run python -m satisfactory_shell
 ```
 
 Open `http://127.0.0.1:8080`. The server is started automatically (`process.auto_start`).
+
+While iterating on the UI, run `npm run dev` in `frontend/` (http://localhost:5173) and the backend together; Vite proxies `/api` to port 8080. `npm run build` is still required before `poetry run satisfactory-shell` can serve `:8080` as the SPA.
 
 Flags: `--host`, `--port`, `--no-auto-start`, `--log-level debug`.
 
@@ -55,11 +55,14 @@ The default `extra_args` also include `-ini:Engine:[SystemSettings]:FG.Dedicated
 
 ## Build a single exe
 
+Needs [Node.js](https://nodejs.org/) (for `npm run build`) as well as Poetry.
+
 ```powershell
+poetry install --with dev
 poetry run build-exe
 ```
 
-Output: `dist/satisfactory-shell.exe`. Put it (and `config.json`) anywhere inside the server install, or set `paths.server_root`.
+Output: `dist/satisfactory-shell.exe` and `dist/webui/`. Keep those two together — the exe serves the SPA from the `webui` folder next to itself. Put them (and `config.json` if you use one) anywhere inside the server install, or set `paths.server_root`.
 
 ## Updating the server
 
@@ -69,4 +72,4 @@ The Updates page runs `steamcmd +force_install_dir <server_root> +login anonymou
 
 Satisfactory Shell is © 2026 [turbo3000r](https://github.com/turbo3000r), licensed under the [BSD 3-Clause License](LICENSE). You may use, modify, and redistribute it. Redistributions must keep the copyright notice and credit **turbo3000r** as the author.
 
-Third-party libraries (htmx, Chart.js, FastAPI, and others) and Coffee Stain / Valve software stay under their own licenses. See [THIRD_PARTY.md](THIRD_PARTY.md).
+Third-party libraries (FastAPI, React, Vite, and others) and Coffee Stain / Valve software stay under their own licenses. See [THIRD_PARTY.md](THIRD_PARTY.md).

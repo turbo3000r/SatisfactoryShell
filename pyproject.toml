@@ -1,6 +1,6 @@
 [project]
 name = "satisfactory-shell"
-version = "0.1.0"
+version = "0.2.0"
 description = "Process manager, metrics, updater and WebUI for a Satisfactory Dedicated Server"
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -9,7 +9,6 @@ requires-python = ">=3.11,<3.15"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "jinja2>=3.1",
     "python-multipart>=0.0.9",
     "itsdangerous>=2.2",
     "psutil>=6.0",

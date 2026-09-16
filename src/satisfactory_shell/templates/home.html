@@ -1,8 +1,0 @@
-{% extends "base.html" %}
-{% block title %}Home - Satisfactory Shell{% endblock %}
-{% block content %}
-<h1>Server overview</h1>
-<div id="home-status" hx-get="/partials/home" hx-trigger="every 5s" hx-swap="innerHTML">
-  {% include "partials/home_status.html" %}
-</div>
-{% endblock %}

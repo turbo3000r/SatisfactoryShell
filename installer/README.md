@@ -11,7 +11,7 @@ poetry install --with dev
 poetry run build-exe
 ```
 
-This writes `dist/satisfactory-shell.exe`. The `.iss` script ships that file only.
+This writes `dist/satisfactory-shell.exe` and `dist/webui/` (the React SPA). The `.iss` script ships both. Needs [Node.js](https://nodejs.org/) on the build machine.
 
 ## 2. Optional: vendor SteamCMD into the installer
 
@@ -35,7 +35,7 @@ Open `installer/satisfactory-shell.iss` in Inno Setup and Build, or:
 & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\satisfactory-shell.iss
 ```
 
-Output: `dist/SatisfactoryShell-Setup-0.1.0.exe`.
+Output: `dist/SatisfactoryShell-Setup-0.2.0.exe`.
 
 ## What the wizard does
 

@@ -2,7 +2,7 @@
 ; Optional: powershell -File fetch-steamcmd.ps1  (vendors redist\steamcmd.zip)
 
 #define MyAppName "Satisfactory Shell"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Satisfactory Shell"
 #define MyAppExeName "satisfactory-shell.exe"
 #define SteamAppId "1690800"
@@ -46,8 +46,12 @@ Name: "{app}\server"; Permissions: users-modify; Check: IsInstallServer
 Name: "{userappdata}\SatisfactoryShell"; Permissions: users-modify
 Name: "{userappdata}\SatisfactoryShell\data"; Permissions: users-modify
 
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\webui"
+
 [Files]
 Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\webui\*"; DestDir: "{app}\webui"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "redist\steamcmd.zip"; DestDir: "{tmp}"; Flags: deleteafterinstall ignoreversion skipifsourcedoesntexist
 
 [Icons]
@@ -62,6 +66,7 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "--bootstrap"; Description: "Star
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\steamcmd"
 Type: filesandordirs; Name: "{app}\server"
+Type: filesandordirs; Name: "{app}\webui"
 
 [Code]
 const

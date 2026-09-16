@@ -18,8 +18,8 @@ yarn-error.log*
 pnpm-debug.log*
 *.tsbuildinfo
 
-# Vite / frontend build output (built assets are generated, not committed;
-# the backend copy step will place them under src/satisfactory_shell/static)
+# Vite / frontend build output (generated, not committed).
+# poetry run build-exe copies this to dist/webui/ next to the exe.
 frontend/dist/
 
 # --- Editors / OS ------------------------------------------------------

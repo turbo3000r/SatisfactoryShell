@@ -4,14 +4,14 @@ Satisfactory Shell is licensed under the BSD 3-Clause License (see `LICENSE`).
 That license covers **this project’s own source and binaries only**. Other
 software you use with it keeps its own terms.
 
-## Bundled in this repository
+## WebUI (built at freeze time)
 
-These files are copied into the WebUI and into the frozen exe:
-
-| Component | Version (approx.) | License | Location |
-| --- | --- | --- | --- |
-| [htmx](https://htmx.org/) | 2.0.4 | BSD 2-Clause | `src/satisfactory_shell/static/htmx.min.js` |
-| [Chart.js](https://www.chartjs.org/) | 4.4.7 | MIT | `src/satisfactory_shell/static/chart.umd.js` |
+The React SPA in `frontend/` is compiled by Vite (`npm run build`) into
+`dist/webui/` (or `frontend/dist` when running from source). Those generated
+files are shipped next to the exe / installer; the npm packages themselves are
+not vendored as source. Licenses for React, Vite, Tailwind, shadcn/ui, and other
+frontend dependencies are in `frontend/node_modules` (see `frontend/package.json`
+and `frontend/package-lock.json`).
 
 Keep those notices when you redistribute the project or a built exe.
 
@@ -23,7 +23,6 @@ Installed by Poetry / pip when you run from source. Typical SPDX identifiers:
 | --- | --- |
 | FastAPI | MIT |
 | Uvicorn | BSD 3-Clause |
-| Jinja2 | BSD 3-Clause |
 | python-multipart | Apache-2.0 |
 | itsdangerous | BSD 3-Clause |
 | psutil | BSD 3-Clause |
@@ -36,6 +35,8 @@ inside the virtualenv or wheel.
 
 | Tool | Role | License |
 | --- | --- | --- |
+| [Node.js](https://nodejs.org/) / npm | `npm run build` for the WebUI | various |
+| [Vite](https://vite.dev/) | Frontend bundler | MIT |
 | [PyInstaller](https://pyinstaller.org/) | `poetry run build-exe` | GPL-2.0-or-later with the Bootloader exception (the frozen app is not required to be GPL) |
 | [Inno Setup](https://jrsoftware.org/isinfo.php) | Windows installer | Inno Setup license |
 
