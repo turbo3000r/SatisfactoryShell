@@ -35,7 +35,7 @@ Open `installer/satisfactory-shell.iss` in Inno Setup and Build, or:
 & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\satisfactory-shell.iss
 ```
 
-Output: `dist/SatisfactoryShell-Setup-0.2.0.exe`.
+Output: `dist/SatisfactoryShell-Setup-0.2.1.exe`.
 
 ## What the wizard does
 

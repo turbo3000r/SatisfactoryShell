@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
-APPDATA_APP = "SatisfactoryShell"
-LEGACY_APPDATA_APP = "SatisfactoryCoating"
+from . import platform as plat
+
+APPDATA_APP = plat.APPDATA_APP
+LEGACY_APPDATA_APP = plat.LEGACY_APPDATA_APP
 
 
 def is_frozen() -> bool:
@@ -31,20 +32,13 @@ def starter_root() -> Path:
 
 
 def user_config_dir() -> Path:
-    """``%APPDATA%\\SatisfactoryShell`` on Windows, else the starter root.
+    """``%APPDATA%\\SatisfactoryShell`` on Windows; XDG config on Linux/macOS.
 
-    If the new folder does not exist yet and the former ``SatisfactoryCoating``
-    AppData directory does, keep using the old one so existing installs still
-    find config and bootstrap files.
+    If the new Windows folder does not exist yet and the former
+    ``SatisfactoryCoating`` AppData directory does, keep using the old one so
+    existing installs still find config and bootstrap files.
     """
-    appdata = os.environ.get("APPDATA")
-    if not appdata:
-        return starter_root()
-    new = Path(appdata) / APPDATA_APP
-    old = Path(appdata) / LEGACY_APPDATA_APP
-    if new.exists() or not old.is_dir():
-        return new
-    return old
+    return plat.user_config_dir(windows_fallback=starter_root())
 
 
 def user_data_dir() -> Path:
@@ -56,18 +50,15 @@ def bootstrap_file() -> Path:
 
 
 def webui_dir() -> Path:
-    """Vite build output: ``webui/`` next to the exe, or ``frontend/dist`` from source."""
+    """Vite build output: ``webui/`` next to the binary, or ``frontend/dist`` from source."""
     if is_frozen():
         return starter_root() / "webui"
     return starter_root() / "frontend" / "dist"
 
 
 def find_server_root(start: Path) -> Path | None:
-    """Walk up from ``start`` until a directory containing FactoryServer.exe is found."""
-    for candidate in [start, *start.parents]:
-        if (candidate / "FactoryServer.exe").is_file():
-            return candidate
-    return None
+    """Walk up from ``start`` until a dedicated-server launcher is found."""
+    return plat.find_server_root(start)
 
 
 def find_appmanifest(server_root: Path, app_id: int) -> Path | None:

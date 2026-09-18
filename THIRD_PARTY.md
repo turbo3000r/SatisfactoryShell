@@ -8,12 +8,13 @@ software you use with it keeps its own terms.
 
 The React SPA in `frontend/` is compiled by Vite (`npm run build`) into
 `dist/webui/` (or `frontend/dist` when running from source). Those generated
-files are shipped next to the exe / installer; the npm packages themselves are
-not vendored as source. Licenses for React, Vite, Tailwind, shadcn/ui, and other
-frontend dependencies are in `frontend/node_modules` (see `frontend/package.json`
-and `frontend/package-lock.json`).
+files are shipped next to the frozen binary / Windows installer / Linux tarball;
+the npm packages themselves are not vendored as source. Licenses for React, Vite,
+Tailwind, shadcn/ui, and other frontend dependencies are in `frontend/node_modules`
+(see `frontend/package.json` and `frontend/package-lock.json`).
 
-Keep those notices when you redistribute the project, a built exe, or the installer.
+Keep those notices when you redistribute the project, a built binary, the
+Windows installer, or the Linux tarball.
 
 ## Python runtime (not vendored)
 
@@ -47,8 +48,8 @@ rights to them and must not be treated as redistributing them:
 
 | Software | Owner | Notes |
 | --- | --- | --- |
-| Satisfactory Dedicated Server (`FactoryServer.exe`) | Coffee Stain / Epic | Steam / Coffee Stain EULA. Not included in this repo. |
-| [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD) | Valve | Valve terms. Optional installer download into `{app}\steamcmd`. |
+| Satisfactory Dedicated Server (`FactoryServer.exe` / Linux shipping binary) | Coffee Stain / Epic | Steam / Coffee Stain EULA. Not included in this repo. |
+| [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD) | Valve | Valve terms. Optional Windows-installer download into `{app}\steamcmd`. |
 
-Do not bundle `FactoryServer.exe` or the dedicated-server content into a
-Satisfactory Shell release unless Coffee Stain / Valve allow it.
+Do not bundle the dedicated-server content into a Satisfactory Shell release
+unless Coffee Stain / Valve allow it.
