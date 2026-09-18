@@ -39,7 +39,7 @@ def create_app(cfg: Config) -> FastAPI:
         try:
             yield
         finally:
-            for task in state.tasks:
+            for task in list(state.tasks):
                 task.cancel()
             await state.api.aclose()
 

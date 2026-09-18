@@ -42,7 +42,7 @@ class AppError(Exception):
 def api_error_http_status(exc: ApiError) -> int:
     """HTTP status used for an ``ApiError`` raised from a route."""
     if isinstance(exc, Unauthorized):
-        return 401
+        return exc.status or 401
     if isinstance(exc, ApiUnavailable):
         return 503
     return 400

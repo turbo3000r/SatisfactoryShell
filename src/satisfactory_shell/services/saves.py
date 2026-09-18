@@ -44,7 +44,7 @@ class SavesService:
     async def load_game(self, token: str, payload: LoadSaveRequest) -> ActionResponse:
         name = payload.save_name.strip()
         await self._state.api.load_game(token, name, payload.ags)
-        asyncio.create_task(self._after_load())
+        self._state.spawn(self._after_load(), name="after-load")
         return ActionResponse(
             ok=True,
             message=f"Loading '{name}'... the game API is unavailable while loading.",
@@ -58,7 +58,7 @@ class SavesService:
             payload.map_name.strip(),
             payload.starting_location.strip(),
         )
-        asyncio.create_task(self._after_load())
+        self._state.spawn(self._after_load(), name="after-load")
         return ActionResponse(ok=True, message=f"Creating session '{session}'...")
 
     async def set_auto_load(self, token: str, payload: SessionNameRequest) -> ActionResponse:
@@ -82,7 +82,7 @@ class SavesService:
         name = save_name.strip() or filename.rsplit(".", 1)[0]
         await self._state.api.upload_save(token, name, file_bytes, load, ags)
         if load:
-            asyncio.create_task(self._after_load())
+            self._state.spawn(self._after_load(), name="after-load")
         return ActionResponse(
             ok=True,
             message=f"Uploaded '{name}'" + (" and loading." if load else "."),

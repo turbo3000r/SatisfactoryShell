@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
-
 from ..models.common import ActionResponse
 from ..models.status import ProcessInfoResponse
 from ..models.updates import InstalledInfoResponse, UpdatesResponse, UpdateStatusResponse
@@ -63,7 +61,7 @@ class UpdatesService:
             if was_running:
                 await self._state.pm.start()
 
-        asyncio.create_task(self._state.steam.update(before, after))
+        self._state.spawn(self._state.steam.update(before, after), name="steam-update")
         return ActionResponse(ok=True, message="Update started. Follow the log below.")
 
     def _updates_ctx(self) -> dict:

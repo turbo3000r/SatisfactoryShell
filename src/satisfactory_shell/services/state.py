@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import time
 from collections import deque
+from collections.abc import Coroutine
+from typing import Any
 
 from ..configs.settings import Config
 from ..utils.exceptions import ApiError
@@ -29,6 +31,19 @@ class AppState:
         self.started_at = time.time()
         self.console_history: deque[dict] = deque(maxlen=50)
         self.tasks: list[asyncio.Task] = []
+
+    def spawn(self, coro: Coroutine[Any, Any, Any], *, name: str | None = None) -> asyncio.Task:
+        """Start a background task that shutdown will cancel."""
+        task = asyncio.create_task(coro, name=name)
+        self.tasks.append(task)
+        task.add_done_callback(self._discard_task)
+        return task
+
+    def _discard_task(self, task: asyncio.Task) -> None:
+        try:
+            self.tasks.remove(task)
+        except ValueError:
+            pass
 
     async def wait_for_api(self, timeout: float = 120.0) -> bool:
         """Block until the HTTPS API answers a HealthCheck (after start / load)."""
