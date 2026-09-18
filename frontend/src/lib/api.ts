@@ -145,6 +145,8 @@ export type UpdatesResponse = {
   process: ProcessInfo
   app_id: number
   beta: string
+  auto_check: boolean
+  check_interval_hours: number
 }
 
 export type SessionResponse = { authed: boolean; login_at: string | null; app_version: string }

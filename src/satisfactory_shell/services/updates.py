@@ -27,6 +27,8 @@ class UpdatesService:
             process=ProcessInfoResponse.model_validate(serialize.process_info(ctx["proc"])),
             app_id=ctx["app_id"],
             beta=ctx["beta"],
+            auto_check=ctx["auto_check"],
+            check_interval_hours=ctx["check_interval_hours"],
         )
 
     async def check(self) -> ActionResponse:
@@ -80,4 +82,6 @@ class UpdatesService:
             "proc": self._state.pm.info(),
             "app_id": cfg.app_id,
             "beta": cfg.steam_beta,
+            "auto_check": cfg.steam_auto_check,
+            "check_interval_hours": cfg.steam_check_interval_hours,
         }

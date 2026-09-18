@@ -135,6 +135,29 @@ class SteamCmd:
                 self.status.checked_at = datetime.now()
                 self.status.phase = ""
 
+    async def run_auto_check(self) -> None:
+        """Check for a newer dedicated-server build on a configured interval."""
+        while True:
+            if not self.cfg.steam_auto_check:
+                return
+            if self.available and not self.status.running:
+                try:
+                    await self.check()
+                    local = self.installed()["manifest"].get("buildid")
+                    latest = self.status.available_buildid
+                    if local and latest and local != latest:
+                        log.info(
+                            "Dedicated server update available: local=%s latest=%s",
+                            local,
+                            latest,
+                        )
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    log.debug("auto update check failed: %s", exc)
+            hours = self.cfg.steam_check_interval_hours
+            if hours <= 0:
+                return
+            await asyncio.sleep(hours * 3600)
+
     async def update(self, before, after) -> None:
         """``before`` / ``after`` are async callables (stop server / start server)."""
         if not self.available:

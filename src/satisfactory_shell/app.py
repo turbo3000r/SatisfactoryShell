@@ -35,6 +35,7 @@ def create_app(cfg: Config) -> FastAPI:
             asyncio.create_task(state.pm.run_watchdog(), name="watchdog"),
             asyncio.create_task(state.metrics.run(), name="metrics"),
             asyncio.create_task(state.bootstrap.run(state.wait_for_api), name="bootstrap"),
+            asyncio.create_task(state.steam.run_auto_check(), name="update-check"),
         ]
         try:
             yield
