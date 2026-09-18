@@ -18,6 +18,9 @@ Usage:
 
 If no tarball is given, the latest GitHub Release linux-x64 archive is downloaded.
 
+Override the install path with INSTALL_PREFIX (default /opt/satisfactory-shell).
+The systemd unit WorkingDirectory and ExecStart are rewritten to match.
+
 After install, set paths.server_root and paths.steamcmd in
 ~/.config/satisfactory-shell/config.json (created on first start) so they
 point at an existing Linux dedicated server and SteamCMD.
@@ -71,6 +74,7 @@ fi
 
 tar -xzf "$WORKDIR/pack.tar.gz" -C "$WORKDIR"
 
+UNIT_SRC="$WORKDIR/satisfactory-shell.service"
 if [[ ! -f "$WORKDIR/satisfactory-shell" ]]; then
   echo "Archive is missing the satisfactory-shell binary." >&2
   exit 1
@@ -78,6 +82,15 @@ fi
 if [[ ! -d "$WORKDIR/webui" ]]; then
   echo "Archive is missing the webui/ folder." >&2
   exit 1
+fi
+if [[ ! -f "$UNIT_SRC" ]]; then
+  echo "Archive is missing satisfactory-shell.service." >&2
+  exit 1
+fi
+
+if systemctl is-active --quiet "$UNIT_NAME"; then
+  echo "Stopping ${UNIT_NAME}…"
+  systemctl stop "$UNIT_NAME"
 fi
 
 echo "Installing to ${PREFIX}"
@@ -87,12 +100,10 @@ cp "$WORKDIR/satisfactory-shell" "$PREFIX/satisfactory-shell"
 chmod +x "$PREFIX/satisfactory-shell"
 cp -R "$WORKDIR/webui" "$PREFIX/webui"
 
-UNIT_SRC="$WORKDIR/satisfactory-shell.service"
-if [[ ! -f "$UNIT_SRC" ]]; then
-  echo "Archive is missing satisfactory-shell.service." >&2
-  exit 1
-fi
-sed -e "s/__USER__/${RUN_USER}/g" -e "s/__GROUP__/${RUN_GROUP}/g" "$UNIT_SRC" > "$UNIT_DST"
+sed -e "s|__USER__|${RUN_USER}|g" \
+    -e "s|__GROUP__|${RUN_GROUP}|g" \
+    -e "s|__PREFIX__|${PREFIX}|g" \
+    "$UNIT_SRC" > "$UNIT_DST"
 chmod 644 "$UNIT_DST"
 
 systemctl daemon-reload

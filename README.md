@@ -28,7 +28,7 @@ Or from a tarball you built or downloaded:
 sudo ./scripts/install.sh dist/satisfactory-shell-0.2.1-linux-x64.tar.gz
 ```
 
-That copies the binary and `webui/` to `/opt/satisfactory-shell`, writes a systemd unit as the sudo-invoking user, and runs `systemctl enable --now satisfactory-shell`. Open **http://127.0.0.1:8080**.
+That copies the binary and `webui/` to `/opt/satisfactory-shell` (override with `INSTALL_PREFIX`; the unit `WorkingDirectory` / `ExecStart` match), writes a systemd unit as the sudo-invoking user, and runs `systemctl enable --now satisfactory-shell`. Open **http://127.0.0.1:8080**.
 
 Config and logs go under `~/.config/satisfactory-shell/` (or `$XDG_CONFIG_HOME/satisfactory-shell/`). The unit does not download SteamCMD or the dedicated server.
 

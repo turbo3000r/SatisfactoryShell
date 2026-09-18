@@ -6,8 +6,8 @@ After=network.target
 Type=simple
 User=__USER__
 Group=__GROUP__
-WorkingDirectory=/opt/satisfactory-shell
-ExecStart=/opt/satisfactory-shell/satisfactory-shell
+WorkingDirectory=__PREFIX__
+ExecStart=__PREFIX__/satisfactory-shell
 Restart=on-failure
 RestartSec=5
 
