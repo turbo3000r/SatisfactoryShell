@@ -1,0 +1,44 @@
+---
+description: Enforce a layered FastAPI service-repository architecture
+alwaysApply: true
+---
+
+# FastAPI Layered Architecture
+
+Apply these rules whenever creating or modifying a Python FastAPI application.
+
+## Structure
+
+- Keep application code under `src/`.
+- Use `configs/` for `pydantic-settings` configuration, `routes/` for routers, `services/` for business logic, `models/` for Pydantic schemas, and `utils/` for shared helpers and exceptions.
+- When persistence is needed, keep ORM models and database access in `db/` or `repositories/`; reserve `models/` for Pydantic request, response, and domain schemas.
+- Keep `main.py` limited to application setup, middleware, exception handlers, lifespan setup, and router registration.
+
+## Routes
+
+- Routes translate HTTP concerns only: request parsing, validation, dependencies, and response status/schema.
+- Inject services, authentication state, and sessions with `Depends()`.
+- Delegate immediately to a service. Do not put business decisions, database queries, or calculations in a path operation.
+
+```python
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    payload: UserCreateRequest,
+    service: UserService = Depends(get_user_service),
+) -> UserResponse:
+    return await service.create_user(payload)
+```
+
+## Services and Errors
+
+- Put domain validation, workflows, repository orchestration, and third-party integrations in services.
+- Accept typed schemas or primitives and return typed domain or response schemas.
+- Raise domain exceptions from `utils/exceptions.py`; map them to HTTP responses in global exception handlers, not in services or routes.
+- Keep routes and I/O-bound service methods asynchronous.
+
+## Types and Configuration
+
+- Use Pydantic v2 `BaseModel` schemas with explicit request (`*Request`) and response (`*Response`) names.
+- For schemas populated from ORM objects, set `model_config = ConfigDict(from_attributes=True)`.
+- Use explicit parameter and return type hints.
+- Define configuration with `pydantic-settings.BaseSettings` and expose it through a cached `@lru_cache` accessor.

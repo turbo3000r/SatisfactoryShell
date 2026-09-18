@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from .config import Config
+from ..configs.settings import Config
 
 log = logging.getLogger("satisfactory_shell.steamcmd")
 
@@ -51,7 +51,7 @@ def _parse_public_buildid(text: str, beta: str) -> str | None:
     if not m:
         return None
     block = m.group(1)
-    bm = re.search(r'"%s"\s*\{\s*"buildid"\s*"(\d+)"' % re.escape(branch), block, re.S)
+    bm = re.search(rf'"{re.escape(branch)}"\s*\{{\s*"buildid"\s*"(\d+)"', block, re.S)
     return bm.group(1) if bm else None
 
 
@@ -179,7 +179,7 @@ class SteamCmd:
                 )
                 st.exit_code = await asyncio.to_thread(self._run_sync, args, on_line)
                 on_line(f"[{time.strftime('%H:%M:%S')}] shell: steamcmd exited with {st.exit_code}")
-                if any("0x606" in l for l in st.log_lines):
+                if any("0x606" in line for line in st.log_lines):
                     on_line(
                         "shell: state 0x606 usually means the Steam client holds this "
                         "install. Close Steam and retry."

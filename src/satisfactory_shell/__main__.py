@@ -35,12 +35,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
-    from . import config as config_mod  # pylint: disable=import-outside-toplevel
     from .app import create_app  # pylint: disable=import-outside-toplevel
+    from .configs.settings import load  # pylint: disable=import-outside-toplevel
 
-    cfg = config_mod.load()
+    cfg = load()
     if args.no_auto_start:
-        cfg.raw["process"]["auto_start"] = False
+        cfg.process.auto_start = False
     if args.bootstrap:
         logging.getLogger("satisfactory_shell").info(
             "bootstrap flag set; claim runs if bootstrap.json is present"

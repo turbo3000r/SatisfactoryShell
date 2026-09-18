@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Awaitable, Callable
 
-from . import paths
-from .config import Config
-from .sf_client import ApiError, ApiUnavailable, HttpsClient
+from ..configs.settings import Config
+from ..utils import paths
+from ..utils.exceptions import ApiError, ApiUnavailable
+from .sf_client import HttpsClient
 
 log = logging.getLogger("satisfactory_shell.bootstrap")
 
@@ -163,8 +164,8 @@ class Bootstrapper:
         if token and client:
             await self.api.set_client_password(token, client)
 
-        if client and self.cfg.raw["game"].get("client_password") != client:
-            self.cfg.raw["game"]["client_password"] = client
+        if client and self.cfg.game.client_password != client:
+            self.cfg.game.client_password = client
             self.cfg.save()
 
         write_status(

@@ -16,44 +16,11 @@ from typing import Any
 
 import httpx
 
+from ..utils.exceptions import ApiError, ApiUnavailable, Unauthorized
+from ..utils.helpers import pick
+
 SERVER_STATES = {0: "Offline", 1: "Idle", 2: "Loading", 3: "Playing"}
 PRIVILEGE_ADMIN = "Administrator"
-
-
-class ApiError(Exception):
-    def __init__(self, code: str, message: str = "", status: int = 0, data: Any = None):
-        super().__init__(f"{code}: {message}" if message else code)
-        self.code = code
-        self.message = message
-        self.status = status
-        self.data = data
-
-
-class ApiUnavailable(ApiError):
-    """Connection refused / reset: server offline (state 0) or loading (state 2)."""
-
-    def __init__(self, reason: str):
-        super().__init__("api_unavailable", reason)
-
-
-class Unauthorized(ApiError):
-    """401 (missing/expired token) or 403 (insufficient privilege)."""
-
-    def __init__(self, message: str = "token missing, invalid or expired", status: int = 401):
-        super().__init__("unauthorized" if status == 401 else "forbidden", message, status=status)
-
-
-def pick(obj: dict | None, *names: str, default: Any = None) -> Any:
-    """Case-insensitive key lookup (server mixes PascalCase and camelCase)."""
-    if not obj:
-        return default
-    lower = {k.lower(): v for k, v in obj.items()}
-    for name in names:
-        if name in obj:
-            return obj[name]
-        if name.lower() in lower:
-            return lower[name.lower()]
-    return default
 
 
 @dataclass
@@ -334,7 +301,7 @@ def poll_lightweight_sync(host: str, port: int, timeout: float = 1.0) -> Lightwe
         while time.monotonic() < deadline:
             try:
                 buf, _ = sock.recvfrom(4096)
-            except socket.timeout:
+            except TimeoutError:
                 return None
             parsed = _parse_response(buf, cookie)
             if parsed:

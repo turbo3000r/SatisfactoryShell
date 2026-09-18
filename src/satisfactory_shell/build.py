@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import paths
+from .utils import paths
 
 
 def _npm() -> str:
