@@ -55,23 +55,29 @@ def main() -> int:
         "--onefile",
         "--name",
         "satisfactory-shell",
-        "--noconsole",
-        "--icon",
-        str(root / "assets" / "app.ico"),
-        "--hidden-import",
-        "uvicorn.logging",
-        "--hidden-import",
-        "uvicorn.loops.auto",
-        "--hidden-import",
-        "uvicorn.protocols.http.auto",
-        "--hidden-import",
-        "uvicorn.protocols.websockets.auto",
-        "--hidden-import",
-        "uvicorn.lifespan.on",
-        "--paths",
-        str(root / "src"),
-        str(Path(__file__).with_name("launcher.py")),
     ]
+    if sys.platform == "win32":
+        cmd.append("--noconsole")
+    icon = root / "assets" / "app.ico"
+    if icon.is_file():
+        cmd.extend(["--icon", str(icon)])
+    cmd.extend(
+        [
+            "--hidden-import",
+            "uvicorn.logging",
+            "--hidden-import",
+            "uvicorn.loops.auto",
+            "--hidden-import",
+            "uvicorn.protocols.http.auto",
+            "--hidden-import",
+            "uvicorn.protocols.websockets.auto",
+            "--hidden-import",
+            "uvicorn.lifespan.on",
+            "--paths",
+            str(root / "src"),
+            str(Path(__file__).with_name("launcher.py")),
+        ]
+    )
     print(" ".join(cmd))
     code = subprocess.call(cmd, cwd=root)
     if code != 0:

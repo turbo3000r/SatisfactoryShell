@@ -16,14 +16,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-auto-start",
         action="store_true",
-        help="do not launch FactoryServer on startup",
+        help="do not launch the dedicated server on startup",
     )
     parser.add_argument(
         "--bootstrap",
         action="store_true",
         help=(
-            "run first-run claim if AppData/SatisfactoryShell/bootstrap.json exists "
-            "(also happens without this flag)"
+            "run first-run claim if bootstrap.json exists in the user config "
+            "directory (also happens without this flag)"
         ),
     )
     parser.add_argument("--log-level", default="info")

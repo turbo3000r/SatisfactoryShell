@@ -1,4 +1,4 @@
-"""Silent first-run claim: ``%APPDATA%\\SatisfactoryShell\\bootstrap.json``.
+"""Silent first-run claim: ``bootstrap.json`` in the user config directory.
 
 The installer writes this file on the “download server” path. Satisfactory Shell
 retries until ClaimServer succeeds (or the server is already claimed), then deletes it.

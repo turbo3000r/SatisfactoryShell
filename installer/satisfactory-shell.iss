@@ -2,7 +2,7 @@
 ; Optional: powershell -File fetch-steamcmd.ps1  (vendors redist\steamcmd.zip)
 
 #define MyAppName "Satisfactory Shell"
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "0.2.1"
 #define MyAppPublisher "Satisfactory Shell"
 #define MyAppExeName "satisfactory-shell.exe"
 #define SteamAppId "1690800"

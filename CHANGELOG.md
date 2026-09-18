@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+- Linux: detect the dedicated server and SteamCMD by files that exist (`FactoryServer-Linux-Shipping` / `FactoryServer.sh` / `FactoryServer.exe`, `steamcmd` / `steamcmd.sh` / `steamcmd.exe`).
+- Linux: config and logs use `$XDG_CONFIG_HOME/satisfactory-shell` or `~/.config/satisfactory-shell`.
+- Linux portable tarball (`scripts/pack-linux.sh`): frozen `satisfactory-shell`, `webui/`, systemd unit, and `install.sh`.
+- `scripts/install.sh` installs to `/opt/satisfactory-shell` and enables a systemd unit. It does not download SteamCMD or the dedicated server.
+- GitHub Actions workflow builds the Linux tarball on `v*` tags (`workflow_dispatch` also uploads an artifact).
+- `poetry run build-exe` omits `--noconsole` on non-Windows so the daemon can log to the journal.
+
 ## 0.2.0
 
 - New React WebUI (Vite + TypeScript + shadcn/ui). The Jinja2/HTMX pages are removed.

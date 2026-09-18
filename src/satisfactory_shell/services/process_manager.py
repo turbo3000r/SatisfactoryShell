@@ -1,4 +1,4 @@
-"""FactoryServer.exe lifecycle: start / stop / restart / crash watchdog."""
+"""Dedicated server lifecycle: start / stop / restart / crash watchdog."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from pathlib import Path
 import psutil
 
 from ..configs.settings import Config
+from ..utils import platform as plat
 from ..utils.exceptions import ApiError
 from .sf_client import HttpsClient
 
@@ -91,26 +92,28 @@ class ProcessManager:
 
     # ------------------------------------------------------------- discovery
     def adopt_existing(self) -> bool:
-        """Attach to a FactoryServer.exe that someone else started (e.g. old launch.bat)."""
+        """Attach to a dedicated server that someone else started."""
         exe = self.cfg.server_exe
-        if not exe:
+        root = self.cfg.server_root
+        if not exe or not root:
             return False
         want = f"-Port={self.cfg.game_port}".lower()
+        root_resolved = root.resolve()
         for p in psutil.process_iter(["name", "exe", "cmdline", "create_time"]):
             try:
-                name = (p.info["name"] or "").lower()
-                if not name.startswith("factoryserver"):
+                name = p.info["name"] or ""
+                if not plat.process_name_matches(name):
                     continue
                 cmd = " ".join(p.info["cmdline"] or []).lower()
                 exe_path = p.info["exe"] or ""
-                same_install = exe_path and Path(exe_path).resolve().is_relative_to(
-                    exe.parent.resolve()
+                same_install = bool(
+                    exe_path and Path(exe_path).resolve().is_relative_to(root_resolved)
                 )
                 if same_install or want in cmd:
                     self._ps = p
                     self._owned = False
                     self._started_at = p.info["create_time"]
-                    self._record(f"Adopted existing FactoryServer.exe pid={p.pid}")
+                    self._record(f"Adopted existing dedicated server pid={p.pid}")
                     return True
             except (psutil.Error, OSError, ValueError):
                 continue
@@ -127,8 +130,9 @@ class ProcessManager:
             exe = self.cfg.server_exe
             if not exe or not exe.is_file():
                 raise RuntimeError(
-                    f"FactoryServer.exe not found (server_root={self.cfg.server_root})"
+                    f"Dedicated server binary not found (server_root={self.cfg.server_root})"
                 )
+            cwd = self.cfg.server_root or exe.parent
             args = [
                 str(exe),
                 f"-Port={self.cfg.game_port}",
@@ -137,18 +141,15 @@ class ProcessManager:
             ]
             self._busy = "starting"
             try:
-                creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(
-                    subprocess, "CREATE_NO_WINDOW", 0
-                )
                 self._proc = subprocess.Popen(  # pylint: disable=consider-using-with
-                    args, cwd=str(exe.parent), creationflags=creationflags
+                    args, cwd=str(cwd), **plat.popen_kwargs()
                 )
                 self._ps = psutil.Process(self._proc.pid)
                 self._owned = True
                 self._started_at = time.time()
                 self._user_stopped = False
                 self._record(
-                    f"Started FactoryServer.exe pid={self._proc.pid}: {' '.join(args[1:])}"
+                    f"Started dedicated server pid={self._proc.pid}: {' '.join(args[1:])}"
                 )
             finally:
                 self._busy = None
@@ -204,9 +205,9 @@ class ProcessManager:
         if not expected:
             self._unexpected_exits += 1
             self._last_unexpected_exit = datetime.now()
-            self._record(f"FactoryServer.exe exited unexpectedly (code={code})")
+            self._record(f"Dedicated server exited unexpectedly (code={code})")
         else:
-            self._record(f"FactoryServer.exe stopped (code={code})")
+            self._record(f"Dedicated server stopped (code={code})")
 
     # ------------------------------------------------------------- watchdog
     async def run_watchdog(self) -> None:

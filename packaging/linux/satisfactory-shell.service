@@ -1,0 +1,15 @@
+[Unit]
+Description=Satisfactory Shell
+After=network.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__GROUP__
+WorkingDirectory=/opt/satisfactory-shell
+ExecStart=/opt/satisfactory-shell/satisfactory-shell
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

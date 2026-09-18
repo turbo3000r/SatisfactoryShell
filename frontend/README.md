@@ -2,7 +2,7 @@
 
 Vite + React + TypeScript SPA, styled with Tailwind CSS and [shadcn/ui](https://ui.shadcn.com).
 
-It is the only WebUI. FastAPI serves the production build (`frontend/dist` from source, or `webui/` next to the frozen exe) and the JSON API under `/api` (defined in `../src/satisfactory_shell/app.py`). Auth is a session cookie; `/login` talks to `POST /api/login`.
+It is the only WebUI. FastAPI serves the production build (`frontend/dist` from source, or `webui/` next to the frozen binary) and the JSON API under `/api` (defined in `../src/satisfactory_shell/app.py`). Auth is a session cookie; `/login` talks to `POST /api/login`.
 
 ## Layout
 
@@ -61,5 +61,6 @@ npm run build     # outputs to frontend/dist (gitignored)
 
 The build output is not committed. `poetry run satisfactory-shell` serves
 `frontend/dist`. `poetry run build-exe` runs this build and copies the files to
-`dist/webui/` next to `satisfactory-shell.exe`. The installer ships that folder
-as `{app}\webui`.
+`dist/webui/` next to the frozen `satisfactory-shell` binary. The Windows
+installer ships that folder as `{app}\webui`. The Linux tarball ships the same
+folder next to the binary.

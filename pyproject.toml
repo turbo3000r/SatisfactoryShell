@@ -1,6 +1,6 @@
 [project]
 name = "satisfactory-shell"
-version = "0.2.0"
+version = "0.2.1"
 description = "Process manager, metrics, updater and WebUI for a Satisfactory Dedicated Server"
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -33,6 +33,10 @@ pytest = ">=8.0"
 requires = ["poetry-core>=2.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
@@ -42,7 +46,7 @@ src = ["src"]
 select = ["E", "F", "W", "I", "UP"]
 
 [tool.pylint.main]
-ignore-paths = ["^build/", "^dist/"]
+ignore-paths = ["^build/", "^dist/", "^tests/"]
 
 [tool.pylint.format]
 max-line-length = 100

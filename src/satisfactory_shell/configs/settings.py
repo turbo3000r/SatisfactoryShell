@@ -6,7 +6,6 @@ import copy
 import json
 import os
 import secrets
-import shutil
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -15,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from ..utils import paths as pathutil
+from ..utils import platform as plat
 
 DEFAULTS: dict[str, Any] = {
     "paths": {"server_root": "", "steamcmd": "", "appmanifest": ""},
@@ -213,7 +213,7 @@ class Config(BaseSettings):
 
     @property
     def server_exe(self) -> Path | None:
-        return self.server_root / "FactoryServer.exe" if self.server_root else None
+        return plat.server_exe(self.server_root)
 
     @property
     def log_file(self) -> Path | None:
@@ -223,15 +223,7 @@ class Config(BaseSettings):
 
     @property
     def version_file(self) -> Path | None:
-        if not self.server_root:
-            return None
-        return (
-            self.server_root
-            / "Engine"
-            / "Binaries"
-            / "Win64"
-            / "FactoryServer-Win64-Shipping.version"
-        )
+        return plat.version_file(self.server_root)
 
     def save(self) -> None:
         payload = {
@@ -296,11 +288,7 @@ def load() -> Config:
     if sc:
         cfg.steamcmd = _resolve_path(sc, root)
     else:
-        found = shutil.which("steamcmd") or shutil.which("steamcmd.exe")
-        if found:
-            cfg.steamcmd = Path(found)
-        elif (root / "steamcmd" / "steamcmd.exe").is_file():
-            cfg.steamcmd = root / "steamcmd" / "steamcmd.exe"
+        cfg.steamcmd = plat.find_steamcmd(root)
 
     am = cfg.paths.appmanifest
     if am:
