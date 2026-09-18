@@ -37,3 +37,5 @@ class UpdatesResponse(BaseModel):
     process: ProcessInfoResponse
     app_id: int
     beta: str
+    auto_check: bool
+    check_interval_hours: float

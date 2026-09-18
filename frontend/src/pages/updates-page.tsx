@@ -70,7 +70,12 @@ export function UpdatesPage() {
         <Card>
           <CardHeader>
             <CardTitle>Available</CardTitle>
-            <CardDescription>Latest build on the {data.beta || "public"} branch.</CardDescription>
+            <CardDescription>
+              Latest build on the {data.beta || "public"} branch.
+              {data.auto_check
+                ? ` Auto-check every ${data.check_interval_hours}h.`
+                : " Automatic checks are off."}
+            </CardDescription>
             <CardAction>
               {data.update_available ? (
                 <Badge variant="outline">update available</Badge>

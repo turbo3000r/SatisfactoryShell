@@ -36,7 +36,13 @@ DEFAULTS: dict[str, Any] = {
         "restart_delay_seconds": 10,
         "shutdown_timeout_seconds": 30,
     },
-    "steam": {"app_id": 1690800, "beta": "", "validate": True},
+    "steam": {
+        "app_id": 1690800,
+        "beta": "",
+        "validate": True,
+        "auto_check": True,
+        "check_interval_hours": 2,
+    },
     "metrics": {"interval_seconds": 5, "history_minutes": 60},
 }
 
@@ -84,6 +90,8 @@ class SteamSettings(BaseModel):
     app_id: int = 1690800
     beta: str = ""
     do_validate: bool = Field(default=True, alias="validate")
+    auto_check: bool = True
+    check_interval_hours: float = 2
 
 
 class MetricsSettings(BaseModel):
@@ -186,6 +194,14 @@ class Config(BaseSettings):
     @property
     def steam_validate(self) -> bool:
         return bool(self.steam.do_validate)
+
+    @property
+    def steam_auto_check(self) -> bool:
+        return bool(self.steam.auto_check)
+
+    @property
+    def steam_check_interval_hours(self) -> float:
+        return float(self.steam.check_interval_hours)
 
     @property
     def metrics_interval(self) -> float:
