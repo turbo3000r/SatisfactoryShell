@@ -47,20 +47,11 @@ def bootstrap_file() -> Path:
     return user_config_dir() / "bootstrap.json"
 
 
-def bundle_root() -> Path:
-    """Where templates/ and static/ live (PyInstaller extracts into _MEIPASS)."""
-    meipass = getattr(sys, "_MEIPASS", None)
-    if meipass:
-        return Path(meipass) / "satisfactory_shell"
-    return Path(__file__).resolve().parent
-
-
-def templates_dir() -> Path:
-    return bundle_root() / "templates"
-
-
-def static_dir() -> Path:
-    return bundle_root() / "static"
+def webui_dir() -> Path:
+    """Vite build output: ``webui/`` next to the exe, or ``frontend/dist`` from source."""
+    if is_frozen():
+        return starter_root() / "webui"
+    return starter_root() / "frontend" / "dist"
 
 
 def find_server_root(start: Path) -> Path | None:

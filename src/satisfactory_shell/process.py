@@ -6,7 +6,7 @@ import asyncio
 import logging
 import subprocess
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -77,7 +77,9 @@ class ProcessManager:
             pid=pid,
             owned=self._owned and running,
             started_at=self._started_at if running else None,
-            uptime_seconds=(time.time() - self._started_at) if running and self._started_at else 0.0,
+            uptime_seconds=(time.time() - self._started_at)
+            if running and self._started_at
+            else 0.0,
             last_exit_code=self._last_exit_code,
             last_unexpected_exit=self._last_unexpected_exit,
             unexpected_exits=self._unexpected_exits,
@@ -100,7 +102,9 @@ class ProcessManager:
                     continue
                 cmd = " ".join(p.info["cmdline"] or []).lower()
                 exe_path = p.info["exe"] or ""
-                same_install = exe_path and Path(exe_path).resolve().is_relative_to(exe.parent.resolve())
+                same_install = exe_path and Path(exe_path).resolve().is_relative_to(
+                    exe.parent.resolve()
+                )
                 if same_install or want in cmd:
                     self._ps = p
                     self._owned = False
@@ -121,7 +125,9 @@ class ProcessManager:
                 return
             exe = self.cfg.server_exe
             if not exe or not exe.is_file():
-                raise RuntimeError(f"FactoryServer.exe not found (server_root={self.cfg.server_root})")
+                raise RuntimeError(
+                    f"FactoryServer.exe not found (server_root={self.cfg.server_root})"
+                )
             args = [
                 str(exe),
                 f"-Port={self.cfg.game_port}",
@@ -130,13 +136,19 @@ class ProcessManager:
             ]
             self._busy = "starting"
             try:
-                creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
-                self._proc = subprocess.Popen(args, cwd=str(exe.parent), creationflags=creationflags)
+                creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(
+                    subprocess, "CREATE_NO_WINDOW", 0
+                )
+                self._proc = subprocess.Popen(  # pylint: disable=consider-using-with
+                    args, cwd=str(exe.parent), creationflags=creationflags
+                )
                 self._ps = psutil.Process(self._proc.pid)
                 self._owned = True
                 self._started_at = time.time()
                 self._user_stopped = False
-                self._record(f"Started FactoryServer.exe pid={self._proc.pid}: {' '.join(args[1:])}")
+                self._record(
+                    f"Started FactoryServer.exe pid={self._proc.pid}: {' '.join(args[1:])}"
+                )
             finally:
                 self._busy = None
 
@@ -156,7 +168,9 @@ class ProcessManager:
                         graceful = True
                         self._record("Sent HTTPS Shutdown")
                     except ApiError as exc:
-                        self._record(f"HTTPS Shutdown failed ({exc.code}); falling back to terminate")
+                        self._record(
+                            f"HTTPS Shutdown failed ({exc.code}); falling back to terminate"
+                        )
                 if not graceful:
                     ps.terminate()
                     self._record("Sent terminate()")
@@ -199,7 +213,7 @@ class ProcessManager:
         if self.cfg.auto_start:
             try:
                 await self.start()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 self._record(f"Auto-start failed: {exc}")
         else:
             self.adopt_existing()
@@ -215,7 +229,7 @@ class ProcessManager:
                     await asyncio.sleep(self.cfg.restart_delay)
                     try:
                         await self.start()
-                    except Exception as exc:  # noqa: BLE001
+                    except Exception as exc:  # pylint: disable=broad-exception-caught
                         self._record(f"Auto-restart failed: {exc}")
 
     def set_auto_restart(self, value: bool) -> None:

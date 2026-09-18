@@ -11,7 +11,7 @@ poetry install --with dev
 poetry run build-exe
 ```
 
-This writes `dist/satisfactory-shell.exe`. The `.iss` script ships that file only.
+This writes `dist/satisfactory-shell.exe` and `dist/webui/` (the React SPA). The `.iss` script ships both. Needs [Node.js](https://nodejs.org/) on the build machine.
 
 ## 2. Optional: vendor SteamCMD into the installer
 
@@ -35,7 +35,7 @@ Open `installer/satisfactory-shell.iss` in Inno Setup and Build, or:
 & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\satisfactory-shell.iss
 ```
 
-Output: `dist/SatisfactoryShell-Setup-0.1.0.exe`.
+Output: `dist/SatisfactoryShell-Setup-0.2.0.exe`.
 
 ## What the wizard does
 
@@ -58,15 +58,15 @@ The installer detects existing installations via the Uninstall registry key (`HK
 
 | Mode | What it does |
 | --- | --- |
-| **Repair** | Re-copies the binary (always). Three checkboxes: binary (locked on), SteamCMD (if bundled), dedicated server (if bundled). Checked components are re-installed/re-downloaded. `config.json` is **not** modified. |
+| **Repair** | Re-copies the exe and `webui/` folder (always). Three checkboxes: binary (locked on), SteamCMD (if bundled), dedicated server (if bundled). Checked components are re-installed/re-downloaded. `config.json` is **not** modified. |
 | **Install additional components** | Shown only if at least one component is missing. Checkboxes for adding bundled SteamCMD and/or dedicated server. Only the new component paths are patched into `config.json`; all other settings are preserved. Adding a server shows a claim page (server name, admin password, client password) and writes `bootstrap.json`. |
 
 **Lower version detected — two options:**
 
 | Mode | What it does |
 | --- | --- |
-| **Upgrade** | Updates the binary and bundled SteamCMD (if applicable). `config.json` is **not** modified; the application handles any new keys with runtime defaults. |
-| **Upgrade and modify** | Updates the binary and shows the full wizard (SteamCMD/server checkboxes, ports, passwords). `config.json` is rewritten. SourcePage checkboxes are pre-filled based on the current install state. |
+| **Upgrade** | Updates the exe, `webui/`, and bundled SteamCMD (if applicable). `config.json` is **not** modified; the application handles any new keys with runtime defaults. |
+| **Upgrade and modify** | Updates the exe and `webui/` and shows the full wizard (SteamCMD/server checkboxes, ports, passwords). `config.json` is rewritten. SourcePage checkboxes are pre-filled based on the current install state. |
 
 ### Config handling summary
 
@@ -80,6 +80,6 @@ The installer detects existing installations via the Uninstall registry key (`HK
 
 `{app}` (default `C:\Program Files\SatisfactoryShell`) gets **Users Modify** so later SteamCMD updates work without an elevated WebUI.
 
-Config and logs live in `%APPDATA%\SatisfactoryShell\`. The Start Menu shortcut runs `satisfactory-shell.exe --bootstrap`. If `bootstrap.json` is present, the shell starts the DS and calls `ClaimServer` when HTTPS is up, then deletes the file. Admin password is never written to `config.json`.
+Config and logs live in `%APPDATA%\SatisfactoryShell\`. The Start Menu shortcut runs `satisfactory-shell.exe --bootstrap`. The exe serves `{app}\webui`. If `bootstrap.json` is present, the shell starts the DS and calls `ClaimServer` when HTTPS is up, then deletes the file. Admin password is never written to `config.json`.
 
-Uninstall removes `{app}` (including a downloaded `server\` folder). It asks before deleting AppData. It does not delete a dedicated server you pointed at outside `{app}`.
+Uninstall removes `{app}` (including `webui\` and a downloaded `server\` folder). It asks before deleting AppData. It does not delete a dedicated server you pointed at outside `{app}`.
