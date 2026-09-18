@@ -58,7 +58,9 @@ def game_state(state: dict | None) -> dict | None:
         "players": pick(state, "numConnectedPlayers", default=0) or 0,
         "player_limit": pick(state, "playerLimit", default=0) or 0,
         "tech_tier": pick(state, "techTier", default=0),
-        "game_phase": (pick(state, "gamePhase", default="") or "").replace("/Game/FactoryGame/GamePhases/", ""),
+        "game_phase": (pick(state, "gamePhase", default="") or "").replace(
+            "/Game/FactoryGame/GamePhases/", ""
+        ),
         "active_schematic": (pick(state, "activeSchematic", default="") or "").rsplit("/", 1)[-1],
         "is_running": bool(pick(state, "isGameRunning", default=False)),
         "is_paused": bool(pick(state, "isGamePaused", default=False)),

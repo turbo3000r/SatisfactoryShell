@@ -1,5 +1,8 @@
 """PyInstaller entry script (absolute import so the package machinery works when frozen)."""
 
+# Redirects must happen before importing the package; handles stay open for process life.
+# pylint: disable=wrong-import-position,consider-using-with
+
 import os
 import sys
 

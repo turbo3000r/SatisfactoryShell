@@ -51,7 +51,7 @@ class MetricsCollector:
         while True:
             try:
                 await self._sample()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 log.debug("metrics sample failed: %s", exc)
             await asyncio.sleep(self.cfg.metrics_interval)
 

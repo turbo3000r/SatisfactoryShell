@@ -157,7 +157,13 @@ class Config:
     def version_file(self) -> Path | None:
         if not self.server_root:
             return None
-        return self.server_root / "Engine" / "Binaries" / "Win64" / "FactoryServer-Win64-Shipping.version"
+        return (
+            self.server_root
+            / "Engine"
+            / "Binaries"
+            / "Win64"
+            / "FactoryServer-Win64-Shipping.version"
+        )
 
     def save(self) -> None:
         self.file.parent.mkdir(parents=True, exist_ok=True)

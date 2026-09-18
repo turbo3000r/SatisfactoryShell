@@ -49,13 +49,20 @@ def read_status(cfg: Config | None = None) -> dict:
             except (OSError, json.JSONDecodeError):
                 continue
     if bootstrap_path().is_file():
-        return {"state": "pending", "message": "First-run claim will start when the server API is up."}
+        return {
+            "state": "pending",
+            "message": "First-run claim will start when the server API is up.",
+        }
     return {"state": "none", "message": ""}
 
 
 def write_status(cfg: Config, state: str, message: str) -> None:
     cfg.data_dir.mkdir(parents=True, exist_ok=True)
-    payload = {"state": state, "message": message, "ts": datetime.now().isoformat(timespec="seconds")}
+    payload = {
+        "state": state,
+        "message": message,
+        "ts": datetime.now().isoformat(timespec="seconds"),
+    }
     status_path(cfg).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     line = f"{payload['ts']} [{state}] {message}\n"
     with log_path(cfg).open("a", encoding="utf-8") as fh:
@@ -93,16 +100,28 @@ class Bootstrapper:
             return
         write_status(self.cfg, "pending", "Waiting for the dedicated server HTTPS API…")
         if not await wait_for_api(600.0):
-            write_status(self.cfg, "failed", "API did not become ready (will retry on next start).")
+            write_status(
+                self.cfg,
+                "failed",
+                "API did not become ready (will retry on next start).",
+            )
             return
         write_status(self.cfg, "running", "Claiming the dedicated server…")
         try:
             await self._claim(job)
         except ApiUnavailable as exc:
-            write_status(self.cfg, "failed", f"API unavailable: {exc} (will retry on next start).")
+            write_status(
+                self.cfg,
+                "failed",
+                f"API unavailable: {exc} (will retry on next start).",
+            )
         except ApiError as exc:
-            write_status(self.cfg, "failed", f"{exc.code}: {exc.message or exc} (will retry on next start).")
-        except Exception as exc:  # noqa: BLE001
+            write_status(
+                self.cfg,
+                "failed",
+                f"{exc.code}: {exc.message or exc} (will retry on next start).",
+            )
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             write_status(self.cfg, "failed", f"{exc} (will retry on next start).")
 
     async def _claim(self, job: dict) -> None:
@@ -119,7 +138,11 @@ class Bootstrapper:
                 token = await self.api.passwordless_login("InitialAdmin")
             except ApiError as exc:
                 if exc.code == "passwordless_login_not_possible":
-                    write_status(self.cfg, "claimed", "Server is already claimed; bootstrap finished.")
+                    write_status(
+                        self.cfg,
+                        "claimed",
+                        "Server is already claimed; bootstrap finished.",
+                    )
                     delete_job()
                     return
                 raise
@@ -128,7 +151,11 @@ class Bootstrapper:
                 token = new_token or token
             except ApiError as exc:
                 if exc.code == "server_claimed":
-                    write_status(self.cfg, "claimed", "Server was already claimed; admin password left unchanged.")
+                    write_status(
+                        self.cfg,
+                        "claimed",
+                        "Server was already claimed; admin password left unchanged.",
+                    )
                     delete_job()
                     return
                 raise
@@ -140,5 +167,9 @@ class Bootstrapper:
             self.cfg.raw["game"]["client_password"] = client
             self.cfg.save()
 
-        write_status(self.cfg, "claimed", f'Server "{name}" claimed. Use the admin password on the Login page.')
+        write_status(
+            self.cfg,
+            "claimed",
+            f'Server "{name}" claimed. Use the admin password on the Login page.',
+        )
         delete_job()

@@ -92,12 +92,21 @@ class HttpsClient:
             headers["Authorization"] = f"Bearer {token}"
         payload = {"function": function, "data": data or {}}
         try:
-            resp = await self._client.post(self.url, content=json.dumps(payload).encode("utf-8"), headers=headers)
-        except (httpx.ConnectError, httpx.ReadError, httpx.RemoteProtocolError, httpx.ConnectTimeout) as exc:
+            resp = await self._client.post(
+                self.url, content=json.dumps(payload).encode("utf-8"), headers=headers
+            )
+        except (
+            httpx.ConnectError,
+            httpx.ReadError,
+            httpx.RemoteProtocolError,
+            httpx.ConnectTimeout,
+        ) as exc:
             raise ApiUnavailable(str(exc) or exc.__class__.__name__) from exc
         return self._handle(resp, raw=raw)
 
-    async def call_multipart(self, function: str, data: dict, token: str, filename: str, file_bytes: bytes) -> ApiResponse:
+    async def call_multipart(
+        self, function: str, data: dict, token: str, filename: str, file_bytes: bytes
+    ) -> ApiResponse:
         headers = {"Authorization": f"Bearer {token}"}
         envelope = json.dumps({"function": function, "data": data})
         files = {
@@ -106,7 +115,12 @@ class HttpsClient:
         }
         try:
             resp = await self._client.post(self.url, files=files, headers=headers, timeout=300.0)
-        except (httpx.ConnectError, httpx.ReadError, httpx.RemoteProtocolError, httpx.ConnectTimeout) as exc:
+        except (
+            httpx.ConnectError,
+            httpx.ReadError,
+            httpx.RemoteProtocolError,
+            httpx.ConnectTimeout,
+        ) as exc:
             raise ApiUnavailable(str(exc) or exc.__class__.__name__) from exc
         return self._handle(resp)
 
@@ -120,7 +134,9 @@ class HttpsClient:
             except json.JSONDecodeError:
                 body = None
         if resp.status_code in (401, 403):
-            raise Unauthorized(pick(body, "errorMessage", default="") or "", status=resp.status_code)
+            raise Unauthorized(
+                pick(body, "errorMessage", default="") or "", status=resp.status_code
+            )
         if body and isinstance(body, dict) and pick(body, "errorCode"):
             raise ApiError(
                 pick(body, "errorCode"),
@@ -129,7 +145,11 @@ class HttpsClient:
                 data=pick(body, "errorData"),
             )
         if resp.status_code >= 400:
-            raise ApiError("http_error", content.decode("utf-8", "replace")[:300], status=resp.status_code)
+            raise ApiError(
+                "http_error",
+                content.decode("utf-8", "replace")[:300],
+                status=resp.status_code,
+            )
         return ApiResponse(resp.status_code, body, content, dict(resp.headers))
 
     # -- helpers -----------------------------------------------------------
@@ -138,7 +158,9 @@ class HttpsClient:
         return r.data
 
     async def password_login(self, password: str, privilege: str = PRIVILEGE_ADMIN) -> str:
-        r = await self.call("PasswordLogin", {"MinimumPrivilegeLevel": privilege, "Password": password})
+        r = await self.call(
+            "PasswordLogin", {"MinimumPrivilegeLevel": privilege, "Password": password}
+        )
         token = pick(r.data, "authenticationToken")
         if not token:
             raise ApiError("no_token", "login returned no authenticationToken")
@@ -178,7 +200,9 @@ class HttpsClient:
         await self.call("SaveGame", {"SaveName": name}, token)
 
     async def load_game(self, token: str, name: str, ags: bool = False) -> int:
-        r = await self.call("LoadGame", {"SaveName": name, "EnableAdvancedGameSettings": ags}, token)
+        r = await self.call(
+            "LoadGame", {"SaveName": name, "EnableAdvancedGameSettings": ags}, token
+        )
         return r.status
 
     async def delete_save_file(self, token: str, name: str) -> None:
@@ -191,7 +215,9 @@ class HttpsClient:
         r = await self.call("DownloadSaveGame", {"SaveName": name}, token, raw=True)
         return r.content
 
-    async def upload_save(self, token: str, name: str, file_bytes: bytes, load: bool, ags: bool) -> int:
+    async def upload_save(
+        self, token: str, name: str, file_bytes: bytes, load: bool, ags: bool
+    ) -> int:
         r = await self.call_multipart(
             "UploadSaveGame",
             {"SaveName": name, "LoadSaveGame": load, "EnableAdvancedGameSettings": ags},
@@ -201,7 +227,9 @@ class HttpsClient:
         )
         return r.status
 
-    async def create_new_game(self, token: str, session: str, map_name: str = "", start: str = "") -> int:
+    async def create_new_game(
+        self, token: str, session: str, map_name: str = "", start: str = ""
+    ) -> int:
         data = {"SessionName": session, "SkipOnboarding": True}
         if map_name:
             data["MapName"] = map_name
@@ -214,7 +242,9 @@ class HttpsClient:
         await self.call("SetAutoLoadSessionName", {"SessionName": session}, token)
 
     async def claim_server(self, token: str, name: str, admin_password: str) -> str | None:
-        r = await self.call("ClaimServer", {"ServerName": name, "AdminPassword": admin_password}, token)
+        r = await self.call(
+            "ClaimServer", {"ServerName": name, "AdminPassword": admin_password}, token
+        )
         return pick(r.data, "authenticationToken")
 
     async def set_client_password(self, token: str, password: str) -> None:

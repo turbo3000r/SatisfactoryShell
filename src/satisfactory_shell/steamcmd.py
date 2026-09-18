@@ -38,7 +38,9 @@ def read_appmanifest(path: Path | None) -> dict:
     out = dict(_ACF_KV.findall(head))
     for k in ("LastUpdated", "LastPlayed"):
         if out.get(k, "").isdigit():
-            out[k + "_iso"] = datetime.fromtimestamp(int(out[k])).isoformat(sep=" ", timespec="seconds")
+            out[k + "_iso"] = datetime.fromtimestamp(int(out[k])).isoformat(
+                sep=" ", timespec="seconds"
+            )
     return out
 
 
@@ -74,7 +76,9 @@ class SteamCmd:
         self._lock = asyncio.Lock()
         if self.last_log_file.is_file():
             try:
-                self.status.log_lines = self.last_log_file.read_text(encoding="utf-8", errors="replace").splitlines()[-500:]
+                self.status.log_lines = self.last_log_file.read_text(
+                    encoding="utf-8", errors="replace"
+                ).splitlines()[-500:]
             except OSError:
                 pass
 
@@ -89,7 +93,7 @@ class SteamCmd:
         }
 
     def _run_sync(self, args: list[str], on_line) -> int:
-        proc = subprocess.Popen(
+        proc = subprocess.Popen(  # pylint: disable=consider-using-with
             [str(self.cfg.steamcmd), *args],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -109,7 +113,15 @@ class SteamCmd:
             return
         async with self._lock:
             lines: list[str] = []
-            args = ["+login", "anonymous", "+app_info_update", "1", "+app_info_print", str(self.cfg.app_id), "+quit"]
+            args = [
+                "+login",
+                "anonymous",
+                "+app_info_update",
+                "1",
+                "+app_info_print",
+                str(self.cfg.app_id),
+                "+quit",
+            ]
             self.status.phase = "checking"
             try:
                 code = await asyncio.to_thread(self._run_sync, args, lines.append)
@@ -148,21 +160,33 @@ class SteamCmd:
                 st.phase = "stopping server"
                 on_line(f"[{time.strftime('%H:%M:%S')}] shell: stopping server")
                 await before()
-                args = ["+force_install_dir", str(self.cfg.server_root), "+login", "anonymous", "+app_update", str(self.cfg.app_id)]
+                args = [
+                    "+force_install_dir",
+                    str(self.cfg.server_root),
+                    "+login",
+                    "anonymous",
+                    "+app_update",
+                    str(self.cfg.app_id),
+                ]
                 if self.cfg.steam_beta:
                     args += ["-beta", self.cfg.steam_beta]
                 if self.cfg.steam_validate:
                     args.append("validate")
                 args.append("+quit")
                 st.phase = "running steamcmd"
-                on_line(f"[{time.strftime('%H:%M:%S')}] shell: {self.cfg.steamcmd} {' '.join(args)}")
+                on_line(
+                    f"[{time.strftime('%H:%M:%S')}] shell: {self.cfg.steamcmd} {' '.join(args)}"
+                )
                 st.exit_code = await asyncio.to_thread(self._run_sync, args, on_line)
                 on_line(f"[{time.strftime('%H:%M:%S')}] shell: steamcmd exited with {st.exit_code}")
                 if any("0x606" in l for l in st.log_lines):
-                    on_line("shell: state 0x606 usually means the Steam client holds this install. Close Steam and retry.")
+                    on_line(
+                        "shell: state 0x606 usually means the Steam client holds this "
+                        "install. Close Steam and retry."
+                    )
                 st.phase = "starting server"
                 await after()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 on_line(f"shell: update failed: {exc}")
                 if st.exit_code is None:
                     st.exit_code = -1

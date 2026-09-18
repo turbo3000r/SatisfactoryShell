@@ -21,7 +21,16 @@ from .config import Config
 from .logtail import read_tail
 from .metrics import MetricsCollector
 from .process import ProcessManager
-from .sf_client import SERVER_STATES, ApiError, ApiUnavailable, ClientAuth, HttpsClient, Unauthorized, pick, poll_lightweight
+from .sf_client import (
+    SERVER_STATES,
+    ApiError,
+    ApiUnavailable,
+    ClientAuth,
+    HttpsClient,
+    Unauthorized,
+    pick,
+    poll_lightweight,
+)
 from .steamcmd import SteamCmd, read_appmanifest, read_version_file
 
 
@@ -80,7 +89,7 @@ def create_app(cfg: Config) -> FastAPI:
     webui = _webui_or_raise()
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def lifespan(_app: FastAPI):
         st.tasks = [
             asyncio.create_task(st.pm.run_watchdog(), name="watchdog"),
             asyncio.create_task(st.metrics.run(), name="metrics"),
@@ -93,10 +102,16 @@ def create_app(cfg: Config) -> FastAPI:
                 t.cancel()
             await st.api.aclose()
 
-    app = FastAPI(title="Satisfactory Shell", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None)
+    app = FastAPI(
+        title="Satisfactory Shell",
+        version=__version__,
+        lifespan=lifespan,
+        docs_url=None,
+        redoc_url=None,
+    )
 
     @app.exception_handler(ApiError)
-    async def game_api_error(request: Request, exc: ApiError) -> JSONResponse:
+    async def game_api_error(_request: Request, exc: ApiError) -> JSONResponse:
         """Game-API failures in ``/api`` routes become JSON instead of a 500."""
         if isinstance(exc, Unauthorized):
             status = 401
@@ -104,9 +119,17 @@ def create_app(cfg: Config) -> FastAPI:
             status = 503
         else:
             status = 400
-        return JSONResponse({"error": exc.code, "message": exc.message or str(exc)}, status_code=status)
+        return JSONResponse(
+            {"error": exc.code, "message": exc.message or str(exc)}, status_code=status
+        )
 
-    app.add_middleware(SessionMiddleware, secret_key=cfg.secret_key, same_site="lax", https_only=False, max_age=12 * 3600)
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=cfg.secret_key,
+        same_site="lax",
+        https_only=False,
+        max_age=12 * 3600,
+    )
 
     # ------------------------------------------------------------ helpers
     def token_of(request: Request) -> str | None:
@@ -124,7 +147,11 @@ def create_app(cfg: Config) -> FastAPI:
             except ApiError as exc:
                 api_error = exc.code
             if health is not None:
-                if st.metrics.last_state and st.metrics.last_state_ts and time.time() - st.metrics.last_state_ts < 30:
+                if (
+                    st.metrics.last_state
+                    and st.metrics.last_state_ts
+                    and time.time() - st.metrics.last_state_ts < 30
+                ):
                     game_state = st.metrics.last_state
                 else:
                     try:
@@ -138,7 +165,9 @@ def create_app(cfg: Config) -> FastAPI:
         return {
             "lw": lw,
             "state_num": state_num,
-            "state_name": SERVER_STATES.get(state_num, "Unknown") if lw or not pinfo.running else "Starting",
+            "state_name": SERVER_STATES.get(state_num, "Unknown")
+            if lw or not pinfo.running
+            else "Starting",
             "health": health,
             "game_state": game_state,
             "api_error": api_error,
@@ -181,7 +210,9 @@ def create_app(cfg: Config) -> FastAPI:
             "proc": st.pm.info(),
             "events": list(reversed(st.pm.events[-15:])),
             "lw": lw,
-            "state_name": lw.state_name if lw else ("Starting" if st.pm.info().running else "Offline"),
+            "state_name": lw.state_name
+            if lw
+            else ("Starting" if st.pm.info().running else "Offline"),
         }
 
     async def saves_ctx(token: str) -> dict:
@@ -223,10 +254,12 @@ def create_app(cfg: Config) -> FastAPI:
             "current_index": current_index,
             "api_error": api_error,
             "game_state": game_state,
-            "is_playing": bool(pick(game_state, "isGameRunning", default=False)) if game_state else False,
+            "is_playing": bool(pick(game_state, "isGameRunning", default=False))
+            if game_state
+            else False,
         }
 
-    async def after_load(token: str) -> None:
+    async def after_load(_token: str) -> None:
         """LoadGame/CreateNewGame return 202 and the API goes dark (state 2). Wait for it."""
         await asyncio.sleep(2.0)
         await st.wait_for_api(timeout=300)
@@ -251,7 +284,7 @@ def create_app(cfg: Config) -> FastAPI:
     async def read_body(request: Request) -> dict:
         try:
             data = await request.json()
-        except Exception:  # noqa: BLE001
+        except Exception:  # pylint: disable=broad-exception-caught
             return {}
         return data if isinstance(data, dict) else {}
 
@@ -280,7 +313,9 @@ def create_app(cfg: Config) -> FastAPI:
     async def api_login(request: Request):
         data = await read_body(request)
         password = str(data.get("password") or "")
-        token = await st.api.password_login(password) if password else await st.api.passwordless_login()
+        token = (
+            await st.api.password_login(password) if password else await st.api.passwordless_login()
+        )
         request.session["token"] = token
         request.session["login_at"] = datetime.now().isoformat(timespec="seconds")
         return {"authed": True}
@@ -310,7 +345,10 @@ def create_app(cfg: Config) -> FastAPI:
     @app.get("/api/metrics")
     async def api_metrics(request: Request):
         api_token(request)
-        payload = {"samples": st.metrics.snapshot(), "process": serialize.process_info(st.pm.info())}
+        payload = {
+            "samples": st.metrics.snapshot(),
+            "process": serialize.process_info(st.pm.info()),
+        }
         return JSONResponse(payload, headers={"Cache-Control": "no-store"})
 
     @app.get("/api/dashboard")
@@ -327,7 +365,7 @@ def create_app(cfg: Config) -> FastAPI:
         }
 
     @app.post("/api/start")
-    async def api_start(request: Request):
+    async def api_start(_request: Request):
         """Public: the game API cannot be reached while the server is down."""
         await st.pm.start()
         return {"ok": True, "message": "Server start requested."}
@@ -376,7 +414,10 @@ def create_app(cfg: Config) -> FastAPI:
         name = required(data, "save_name")
         await st.api.load_game(tok, name, bool(data.get("ags")))
         asyncio.create_task(after_load(tok))
-        return {"ok": True, "message": f"Loading '{name}'... the game API is unavailable while loading."}
+        return {
+            "ok": True,
+            "message": f"Loading '{name}'... the game API is unavailable while loading.",
+        }
 
     @app.post("/api/saves/new")
     async def api_saves_new(request: Request):
@@ -426,7 +467,10 @@ def create_app(cfg: Config) -> FastAPI:
         await st.api.upload_save(tok, name, await file.read(), load, ags)
         if load:
             asyncio.create_task(after_load(tok))
-        return {"ok": True, "message": f"Uploaded '{name}'" + (" and loading." if load else ".")}
+        return {
+            "ok": True,
+            "message": f"Uploaded '{name}'" + (" and loading." if load else "."),
+        }
 
     @app.get("/api/saves/download")
     async def api_saves_download(request: Request, save_name: str):
@@ -452,7 +496,12 @@ def create_app(cfg: Config) -> FastAPI:
     async def api_console_run(request: Request):
         tok = api_token(request)
         command = required(await read_body(request), "command")
-        entry = {"ts": datetime.now().strftime("%H:%M:%S"), "command": command, "result": "", "error": ""}
+        entry = {
+            "ts": datetime.now().strftime("%H:%M:%S"),
+            "command": command,
+            "result": "",
+            "error": "",
+        }
         try:
             entry["result"] = await st.api.run_command(tok, command)
         except Unauthorized:
@@ -492,8 +541,14 @@ def create_app(cfg: Config) -> FastAPI:
             raise HTTPException(status_code=409, detail="An update is already running.")
         await st.steam.check()
         if st.steam.status.check_error:
-            raise HTTPException(status_code=400, detail=f"Check failed: {st.steam.status.check_error}")
-        return {"ok": True, "message": f"Latest {cfg.steam_beta or 'public'} buildid: {st.steam.status.available_buildid}"}
+            raise HTTPException(
+                status_code=400, detail=f"Check failed: {st.steam.status.check_error}"
+            )
+        channel = cfg.steam_beta or "public"
+        return {
+            "ok": True,
+            "message": f"Latest {channel} buildid: {st.steam.status.available_buildid}",
+        }
 
     @app.post("/api/updates/run")
     async def api_updates_run(request: Request):
@@ -501,7 +556,10 @@ def create_app(cfg: Config) -> FastAPI:
         if st.steam.status.running:
             raise HTTPException(status_code=409, detail="An update is already running.")
         if not st.steam.available:
-            raise HTTPException(status_code=400, detail="steamcmd not found. Set paths.steamcmd in config.json.")
+            raise HTTPException(
+                status_code=400,
+                detail="steamcmd not found. Set paths.steamcmd in config.json.",
+            )
         was_running = st.pm.info().running
 
         async def before():
