@@ -12,8 +12,9 @@ from pathlib import Path
 
 import psutil
 
-from .config import Config
-from .sf_client import ApiError, HttpsClient
+from ..configs.settings import Config
+from ..utils.exceptions import ApiError
+from .sf_client import HttpsClient
 
 log = logging.getLogger("satisfactory_shell.process")
 

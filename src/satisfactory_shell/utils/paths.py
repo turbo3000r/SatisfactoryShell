@@ -14,12 +14,20 @@ def is_frozen() -> bool:
     return bool(getattr(sys, "frozen", False))
 
 
+def _package_dir() -> Path:
+    """Directory of the ``satisfactory_shell`` package (not a subpackage)."""
+    here = Path(__file__).resolve().parent
+    while here.name != "satisfactory_shell" and here.parent != here:
+        here = here.parent
+    return here
+
+
 def starter_root() -> Path:
     """Directory of the exe when frozen, otherwise the project root (``SatisfactoryShell/``)."""
     if is_frozen():
         return Path(sys.executable).resolve().parent
-    # src/satisfactory_shell/paths.py -> SatisfactoryShell/
-    return Path(__file__).resolve().parents[2]
+    # src/satisfactory_shell -> SatisfactoryShell/
+    return _package_dir().parent.parent
 
 
 def user_config_dir() -> Path:

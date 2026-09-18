@@ -1,25 +1,24 @@
-"""JSON-safe views of the runtime dataclasses, used by the ``/api`` routes."""
+"""JSON-safe views of the runtime dataclasses, used by the API services."""
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import asdict
 from datetime import datetime
-from typing import Iterable
+from typing import Any
 
-from .process import ProcessInfo
-from .sf_client import LightweightState, pick
-from .steamcmd import UpdateStatus
+from .helpers import pick
 
 
 def _iso(value: datetime | None) -> str | None:
     return value.isoformat(sep=" ", timespec="seconds") if value else None
 
 
-def process_info(info: ProcessInfo) -> dict:
+def process_info(info: Any) -> dict:
     return asdict(info) | {"last_unexpected_exit": _iso(info.last_unexpected_exit)}
 
 
-def lightweight(lw: LightweightState | None) -> dict | None:
+def lightweight(lw: Any | None) -> dict | None:
     if lw is None:
         return None
     return {
@@ -35,7 +34,7 @@ def events(items: Iterable[tuple[datetime, str]]) -> list[dict]:
     return [{"ts": _iso(ts), "message": message} for ts, message in items]
 
 
-def update_status(status: UpdateStatus, *, log_limit: int = 400) -> dict:
+def update_status(status: Any, *, log_limit: int = 400) -> dict:
     return {
         "running": status.running,
         "phase": status.phase,

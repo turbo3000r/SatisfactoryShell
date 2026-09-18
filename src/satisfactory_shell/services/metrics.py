@@ -10,9 +10,11 @@ from dataclasses import asdict, dataclass
 
 import psutil
 
-from .config import Config
-from .process import ProcessManager
-from .sf_client import ApiError, ClientAuth, HttpsClient, pick
+from ..configs.settings import Config
+from ..utils.exceptions import ApiError
+from ..utils.helpers import pick
+from .process_manager import ProcessManager
+from .sf_client import ClientAuth, HttpsClient
 
 log = logging.getLogger("satisfactory_shell.metrics")
 
