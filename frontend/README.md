@@ -15,10 +15,10 @@ frontend/
       site-header.tsx     # page title, theme toggle, login/logout
       auth-provider.tsx   # session state, 401 handling
       theme-provider.tsx  # light/dark/system, persisted in localStorage
-      metrics-charts.tsx  # the four old Chart.js canvases as one tabbed card
+      metrics-charts.tsx  # CPU / RAM / ping / tick-rate charts
       stat-list.tsx, state-badges.tsx, confirm-action.tsx, log-view.tsx
     pages/                # one file per route
-    hooks/                # use-poll (replaces hx-trigger), use-action (toasts)
+    hooks/                # use-poll, use-action (toasts)
     lib/api.ts            # typed client for every /api endpoint
 ```
 

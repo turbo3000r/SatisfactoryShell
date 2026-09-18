@@ -1,20 +1,30 @@
 # Satisfactory Shell
 
-Process manager, metrics, SteamCMD updater and WebUI for the Satisfactory Dedicated Server. Replaces `launch.bat`.
+Process manager, metrics, SteamCMD updater, and WebUI for the Satisfactory Dedicated Server.
 
-## Project structure
+**0.2.0** replaces the old HTML/HTMX pages with a React WebUI. The Windows installer and the portable layout both ship `satisfactory-shell.exe` plus a `webui/` folder next to it. Keep those two together. See [CHANGELOG.md](CHANGELOG.md).
+
+## Install (Windows)
+
+Build or download `SatisfactoryShell-Setup-0.2.0.exe` (see [`installer/README.md`](installer/README.md)). The wizard can install SteamCMD and the dedicated server, or point at copies you already have.
+
+Config and logs go under `%APPDATA%\SatisfactoryShell\`. After setup, the Start Menu shortcut starts the shell; open **http://127.0.0.1:8080**.
+
+Home needs no login. Dashboard, Saves, Console, and Updates use the Satisfactory **admin** password.
+
+## Portable layout
 
 ```
-SatisfactoryShell/
-  src/satisfactory_shell/   # FastAPI backend: process manager, metrics, SteamCMD, /api + SPA host
-  frontend/                 # Vite + React + TypeScript + shadcn/ui WebUI (see frontend/README.md)
-  installer/                # Inno Setup Windows installer
-  assets/                   # icons and installer images
+satisfactory-shell.exe
+webui\                 # required; the exe serves this folder
+config.json            # optional if you use AppData config
 ```
 
-The WebUI is the React SPA in `frontend/`. FastAPI serves the built files and the JSON API under `/api`. See [`frontend/README.md`](frontend/README.md) for the frontend dev workflow.
+`poetry run build-exe` writes that pair under `dist/`. Put them anywhere inside a server install, or set `paths.server_root`.
 
 ## Run from source
+
+Needs Python 3.11+ (Poetry) and [Node.js](https://nodejs.org/) (to build the WebUI).
 
 ```powershell
 cd SatisfactoryShell
@@ -23,17 +33,15 @@ cd frontend; npm install; npm run build; cd ..
 poetry run satisfactory-shell            # or: poetry run python -m satisfactory_shell
 ```
 
-Open `http://127.0.0.1:8080`. The server is started automatically (`process.auto_start`).
+Open `http://127.0.0.1:8080`. The dedicated server is started automatically (`process.auto_start`).
 
-While iterating on the UI, run `npm run dev` in `frontend/` (http://localhost:5173) and the backend together; Vite proxies `/api` to port 8080. `npm run build` is still required before `poetry run satisfactory-shell` can serve `:8080` as the SPA.
+While iterating on the UI, run `npm run dev` in `frontend/` (http://localhost:5173) alongside the backend; Vite proxies `/api` to port 8080. A production `npm run build` is still required if you open `:8080` directly. Details: [`frontend/README.md`](frontend/README.md).
 
 Flags: `--host`, `--port`, `--no-auto-start`, `--log-level debug`.
 
-A Windows installer (Inno Setup) lives in [`installer/`](installer/README.md). It writes config under `%APPDATA%\SatisfactoryShell\` and can download SteamCMD plus the dedicated server into `{app}\steamcmd` and `{app}\server`.
-
 ## Config
 
-Search order: `SATISFACTORY_SHELL_CONFIG` (legacy: `COATING_CONFIG`) → `%APPDATA%\SatisfactoryShell\config.json` → `config.json` next to the starter (this Steam tree / Poetry). If only the former `%APPDATA%\SatisfactoryCoating\` folder exists, that is used until you create the new one. Logs and SteamCMD output go to `%APPDATA%\SatisfactoryShell\data\`. Copy `config.example.json` to pre-seed. This install’s `launch.bat` sets `SATISFACTORY_SHELL_CONFIG` to `SatisfactoryShell\config.json`.
+Search order: `SATISFACTORY_SHELL_CONFIG` (legacy: `COATING_CONFIG`) → `%APPDATA%\SatisfactoryShell\config.json` → `config.json` next to the exe / project root. If only the former `%APPDATA%\SatisfactoryCoating\` folder exists, that is used until you create the new one. Logs and SteamCMD output go to `%APPDATA%\SatisfactoryShell\data\`. Copy [`config.example.json`](config.example.json) to pre-seed.
 
 Empty path strings mean "relative to the starter root":
 
@@ -45,7 +53,7 @@ Empty path strings mean "relative to the starter root":
 
 `game.port` is the game/HTTPS-API port (`-Port=`), `game.reliable_port` is `-ReliablePort=`.
 
-`webui.host` defaults to `127.0.0.1`; set `0.0.0.0` for LAN access. The Home page needs no login; every other page requires the Satisfactory admin password.
+`webui.host` defaults to `127.0.0.1`; set `0.0.0.0` for LAN access.
 
 `process.auto_start` (default `true`) launches `FactoryServer.exe` when Satisfactory Shell starts. Set it `false` if you only want the WebUI.
 
@@ -53,18 +61,19 @@ Empty path strings mean "relative to the starter root":
 
 The default `extra_args` also include `-ini:Engine:[SystemSettings]:FG.DedicatedServer.AllowInsecureLocalAccess=1` (loopback-only API without a token). Restart the dedicated server after changing that flag.
 
-## Build a single exe
+## Build a release
 
-Needs [Node.js](https://nodejs.org/) (for `npm run build`) as well as Poetry.
+Needs Poetry, Node.js, and [Inno Setup 6](https://jrsoftware.org/isinfo.php) for the installer.
 
 ```powershell
 poetry install --with dev
 poetry run build-exe
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\satisfactory-shell.iss
 ```
 
-Output: `dist/satisfactory-shell.exe` and `dist/webui/`. Keep those two together — the exe serves the SPA from the `webui` folder next to itself. Put them (and `config.json` if you use one) anywhere inside the server install, or set `paths.server_root`.
+Output: `dist/satisfactory-shell.exe`, `dist/webui/`, and `dist/SatisfactoryShell-Setup-0.2.0.exe`. Full installer notes: [`installer/README.md`](installer/README.md).
 
-## Updating the server
+## Updating the dedicated server
 
 The Updates page runs `steamcmd +force_install_dir <server_root> +login anonymous +app_update <app_id> [validate] +quit` after stopping the server. If the install lives in a Steam library and the Steam client is running, SteamCMD may fail with `0x606`; close Steam first.
 

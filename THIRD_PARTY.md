@@ -13,7 +13,7 @@ not vendored as source. Licenses for React, Vite, Tailwind, shadcn/ui, and other
 frontend dependencies are in `frontend/node_modules` (see `frontend/package.json`
 and `frontend/package-lock.json`).
 
-Keep those notices when you redistribute the project or a built exe.
+Keep those notices when you redistribute the project, a built exe, or the installer.
 
 ## Python runtime (not vendored)
 
